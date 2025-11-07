@@ -4,8 +4,13 @@ import firebaseAuthService from '../services/firebaseAuth';
 
 const AuthContext = createContext();
 
-// Check if we're using Firebase
-const USE_FIREBASE = import.meta.env.VITE_USE_FIREBASE === 'true';
+// Determine Firebase usage (mirror logic in services/api.js)
+const firebaseFlag = import.meta.env.VITE_USE_FIREBASE;
+const USE_FIREBASE = (() => {
+  if (firebaseFlag === 'true') return true;
+  if (firebaseFlag === 'false') return false;
+  return !import.meta.env.DEV;
+})();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
