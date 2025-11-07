@@ -6,7 +6,7 @@ const USE_FIREBASE = import.meta.env.VITE_USE_FIREBASE === 'true';
 
 // Create axios instance for backend API
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.DEV ? '/api' : 'http://localhost:5001/api',
+  baseURL: import.meta.env.DEV ? '/api' : 'https://f-nha-tro-default-rtdb.asia-southeast1.firebasedatabase.app/users.json',
   headers: {
     'Content-Type': 'application/json',
   },
