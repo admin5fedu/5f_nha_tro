@@ -1,32 +1,12 @@
 import axios from 'axios';
 import firebaseApi from './firebaseApi';
 
-// Determine Firebase usage.
-// Default behaviour:
-// - Development: opt-in via VITE_USE_FIREBASE
-// - Production: use Firebase unless explicitly disabled
-const firebaseFlag = import.meta.env.VITE_USE_FIREBASE;
-const USE_FIREBASE = (() => {
-  if (firebaseFlag === 'true') return true;
-  if (firebaseFlag === 'false') return false;
-  return !import.meta.env.DEV; // default to Firebase in production builds
-})();
-
-// Resolve backend API base URL with sensible fallbacks
-const API_BASE_URL = (() => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-  if (import.meta.env.DEV) {
-    return '/api';
-  }
-  // In production, default to relative /api to allow proxying through hosting provider
-  return '/api';
-})();
+// Check if we should use Firebase
+const USE_FIREBASE = import.meta.env.VITE_USE_FIREBASE === 'true';
 
 // Create axios instance for backend API
 const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.DEV ? '/api' : 'http://localhost:5001/api',
   headers: {
     'Content-Type': 'application/json',
   },

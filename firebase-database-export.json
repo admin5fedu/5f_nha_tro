@@ -1,0 +1,1190 @@
+{
+  "users": {
+    "user_1": {
+      "id": 1,
+      "username": "admin",
+      "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+      "full_name": "Administrator",
+      "email": "admin@nhatro.vn",
+      "phone": "0901234567",
+      "address": "Hà Nội",
+      "role": "admin",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "user_2": {
+      "id": 2,
+      "username": "manager1",
+      "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+      "full_name": "Nguyễn Văn Quản lý",
+      "email": "manager1@nhatro.vn",
+      "phone": "0902345678",
+      "address": "Hà Nội",
+      "role": "manager",
+      "status": "active",
+      "created_at": "2025-01-02T00:00:00.000Z"
+    },
+    "user_3": {
+      "id": 3,
+      "username": "accountant1",
+      "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+      "full_name": "Trần Thị Kế toán",
+      "email": "accountant1@nhatro.vn",
+      "phone": "0903456789",
+      "address": "Hà Nội",
+      "role": "accountant",
+      "status": "active",
+      "created_at": "2025-01-03T00:00:00.000Z"
+    },
+    "user_4": {
+      "id": 4,
+      "username": "staff1",
+      "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+      "full_name": "Lê Văn Nhân viên",
+      "email": "staff1@nhatro.vn",
+      "phone": "0904567890",
+      "address": "Hà Nội",
+      "role": "user",
+      "status": "active",
+      "created_at": "2025-01-04T00:00:00.000Z"
+    }
+  },
+  "branches": {
+    "branch_1": {
+      "id": 1,
+      "name": "Chi nhánh Cầu Giấy",
+      "address": "123 Đường Cầu Giấy, Quận Cầu Giấy, Hà Nội",
+      "phone": "0241234567",
+      "manager_name": "Nguyễn Văn Quản lý",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "branch_2": {
+      "id": 2,
+      "name": "Chi nhánh Đống Đa",
+      "address": "456 Đường Láng, Quận Đống Đa, Hà Nội",
+      "phone": "0242345678",
+      "manager_name": "Trần Thị Mai",
+      "status": "active",
+      "created_at": "2025-01-02T00:00:00.000Z"
+    },
+    "branch_3": {
+      "id": 3,
+      "name": "Chi nhánh Thanh Xuân",
+      "address": "789 Nguyễn Trãi, Quận Thanh Xuân, Hà Nội",
+      "phone": "0243456789",
+      "manager_name": "Lê Văn Hùng",
+      "status": "active",
+      "created_at": "2025-01-03T00:00:00.000Z"
+    }
+  },
+  "user_branches": {
+    "ub_1": {
+      "id": 1,
+      "user_id": 2,
+      "branch_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "ub_2": {
+      "id": 2,
+      "user_id": 3,
+      "branch_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "ub_3": {
+      "id": 3,
+      "user_id": 4,
+      "branch_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "ub_4": {
+      "id": 4,
+      "user_id": 4,
+      "branch_id": 2,
+      "created_at": "2025-01-02T00:00:00.000Z"
+    }
+  },
+  "rooms": {
+    "room_1": {
+      "id": 1,
+      "branch_id": 1,
+      "room_number": "P101",
+      "floor": 1,
+      "area": 25,
+      "price": 3000000,
+      "deposit": 6000000,
+      "status": "occupied",
+      "description": "Phòng đầy đủ tiện nghi, gần trường đại học",
+      "amenities": "Giường, tủ quần áo, điều hòa, nóng lạnh",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "room_2": {
+      "id": 2,
+      "branch_id": 1,
+      "room_number": "P102",
+      "floor": 1,
+      "area": 20,
+      "price": 2500000,
+      "deposit": 5000000,
+      "status": "available",
+      "description": "Phòng thoáng mát, có ban công",
+      "amenities": "Giường, tủ quần áo, quạt trần",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "room_3": {
+      "id": 3,
+      "branch_id": 1,
+      "room_number": "P201",
+      "floor": 2,
+      "area": 30,
+      "price": 3500000,
+      "deposit": 7000000,
+      "status": "occupied",
+      "description": "Phòng rộng rãi, view đẹp",
+      "amenities": "Giường, tủ quần áo, điều hòa, nóng lạnh, bếp nhỏ",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "room_4": {
+      "id": 4,
+      "branch_id": 2,
+      "room_number": "P101",
+      "floor": 1,
+      "area": 22,
+      "price": 2800000,
+      "deposit": 5600000,
+      "status": "available",
+      "description": "Phòng mới xây, sạch sẽ",
+      "amenities": "Giường, tủ quần áo, điều hòa",
+      "created_at": "2025-01-02T00:00:00.000Z"
+    },
+    "room_5": {
+      "id": 5,
+      "branch_id": 2,
+      "room_number": "P102",
+      "floor": 1,
+      "area": 28,
+      "price": 3200000,
+      "deposit": 6400000,
+      "status": "occupied",
+      "description": "Phòng gần chợ, thuận tiện mua sắm",
+      "amenities": "Giường, tủ quần áo, điều hòa, nóng lạnh",
+      "created_at": "2025-01-02T00:00:00.000Z"
+    },
+    "room_6": {
+      "id": 6,
+      "branch_id": 3,
+      "room_number": "P201",
+      "floor": 2,
+      "area": 26,
+      "price": 3100000,
+      "deposit": 6200000,
+      "status": "maintenance",
+      "description": "Phòng đang sửa chữa",
+      "amenities": "Giường, tủ quần áo, điều hòa",
+      "created_at": "2025-01-03T00:00:00.000Z"
+    }
+  },
+  "tenants": {
+    "tenant_1": {
+      "id": 1,
+      "full_name": "Nguyễn Văn An",
+      "phone": "0911111111",
+      "email": "nguyenvanan@gmail.com",
+      "id_card": "001234567890",
+      "address": "Hà Nội",
+      "hometown": "Nam Định",
+      "emergency_contact": "0912222222 - Mẹ: Nguyễn Thị Lan",
+      "has_temp_residence": "yes",
+      "notes": "Khách thuê lâu năm, thanh toán đúng hạn",
+      "tenant_type": "owner",
+      "owner_tenant_id": null,
+      "created_at": "2025-01-05T00:00:00.000Z"
+    },
+    "tenant_2": {
+      "id": 2,
+      "full_name": "Trần Thị Bình",
+      "phone": "0922222222",
+      "email": "tranthib@gmail.com",
+      "id_card": "001234567891",
+      "address": "Hà Nội",
+      "hometown": "Hải Phòng",
+      "emergency_contact": "0923333333 - Bố: Trần Văn Dũng",
+      "has_temp_residence": "pending",
+      "notes": "Đồng thuê với Nguyễn Văn An",
+      "tenant_type": "cotenant",
+      "owner_tenant_id": 1,
+      "created_at": "2025-01-06T00:00:00.000Z"
+    },
+    "tenant_3": {
+      "id": 3,
+      "full_name": "Lê Văn Cường",
+      "phone": "0933333333",
+      "email": "levancuong@gmail.com",
+      "id_card": "001234567892",
+      "address": "Hà Nội",
+      "hometown": "Thanh Hóa",
+      "emergency_contact": "0934444444 - Chị: Lê Thị Hoa",
+      "has_temp_residence": "yes",
+      "notes": "Sinh viên",
+      "tenant_type": "owner",
+      "owner_tenant_id": null,
+      "created_at": "2025-01-07T00:00:00.000Z"
+    },
+    "tenant_4": {
+      "id": 4,
+      "full_name": "Phạm Thị Duyên",
+      "phone": "0944444444",
+      "email": "phamthiduyen@gmail.com",
+      "id_card": "001234567893",
+      "address": "Hà Nội",
+      "hometown": "Nghệ An",
+      "emergency_contact": "0945555555 - Mẹ: Phạm Thị Mai",
+      "has_temp_residence": "no",
+      "notes": "Nhân viên văn phòng",
+      "tenant_type": "owner",
+      "owner_tenant_id": null,
+      "created_at": "2025-01-08T00:00:00.000Z"
+    }
+  },
+  "contracts": {
+    "contract_1": {
+      "id": 1,
+      "branch_id": 1,
+      "room_id": 1,
+      "tenant_id": 1,
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "monthly_rent": 3000000,
+      "deposit": 6000000,
+      "status": "active",
+      "notes": "Hợp đồng 1 năm",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "contract_2": {
+      "id": 2,
+      "branch_id": 1,
+      "room_id": 3,
+      "tenant_id": 3,
+      "start_date": "2025-01-15",
+      "end_date": "2025-07-14",
+      "monthly_rent": 3500000,
+      "deposit": 7000000,
+      "status": "active",
+      "notes": "Hợp đồng 6 tháng",
+      "created_at": "2025-01-15T00:00:00.000Z"
+    },
+    "contract_3": {
+      "id": 3,
+      "branch_id": 2,
+      "room_id": 5,
+      "tenant_id": 4,
+      "start_date": "2024-12-01",
+      "end_date": "2025-11-30",
+      "monthly_rent": 3200000,
+      "deposit": 6400000,
+      "status": "active",
+      "notes": "Hợp đồng 1 năm",
+      "created_at": "2024-12-01T00:00:00.000Z"
+    }
+  },
+  "services": {
+    "service_1": {
+      "id": 1,
+      "name": "Điện",
+      "unit": "meter",
+      "unit_name": "kWh",
+      "description": "Tiền điện theo đồng hồ",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "service_2": {
+      "id": 2,
+      "name": "Nước",
+      "unit": "meter",
+      "unit_name": "m³",
+      "description": "Tiền nước theo đồng hồ",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "service_3": {
+      "id": 3,
+      "name": "Internet",
+      "unit": "quantity",
+      "unit_name": "tháng",
+      "description": "Phí internet cố định",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "service_4": {
+      "id": 4,
+      "name": "Vệ sinh chung",
+      "unit": "quantity",
+      "unit_name": "tháng",
+      "description": "Phí vệ sinh chung",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "service_5": {
+      "id": 5,
+      "name": "Gửi xe máy",
+      "unit": "quantity",
+      "unit_name": "tháng",
+      "description": "Phí gửi xe máy",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "contract_services": {
+    "cs_1": {
+      "id": 1,
+      "contract_id": 1,
+      "service_id": 1,
+      "price": 3500,
+      "quantity": 1,
+      "notes": "Giá điện 3.500đ/kWh",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "cs_2": {
+      "id": 2,
+      "contract_id": 1,
+      "service_id": 2,
+      "price": 20000,
+      "quantity": 1,
+      "notes": "Giá nước 20.000đ/m³",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "cs_3": {
+      "id": 3,
+      "contract_id": 1,
+      "service_id": 3,
+      "price": 100000,
+      "quantity": 1,
+      "notes": "Internet 100.000đ/tháng",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "cs_4": {
+      "id": 4,
+      "contract_id": 1,
+      "service_id": 4,
+      "price": 50000,
+      "quantity": 1,
+      "notes": "Vệ sinh 50.000đ/tháng",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "cs_5": {
+      "id": 5,
+      "contract_id": 1,
+      "service_id": 5,
+      "price": 50000,
+      "quantity": 2,
+      "notes": "Gửi 2 xe máy",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "cs_6": {
+      "id": 6,
+      "contract_id": 2,
+      "service_id": 1,
+      "price": 3500,
+      "quantity": 1,
+      "notes": "Giá điện 3.500đ/kWh",
+      "created_at": "2025-01-15T00:00:00.000Z"
+    },
+    "cs_7": {
+      "id": 7,
+      "contract_id": 2,
+      "service_id": 2,
+      "price": 20000,
+      "quantity": 1,
+      "notes": "Giá nước 20.000đ/m³",
+      "created_at": "2025-01-15T00:00:00.000Z"
+    },
+    "cs_8": {
+      "id": 8,
+      "contract_id": 2,
+      "service_id": 3,
+      "price": 100000,
+      "quantity": 1,
+      "notes": "Internet 100.000đ/tháng",
+      "created_at": "2025-01-15T00:00:00.000Z"
+    },
+    "cs_9": {
+      "id": 9,
+      "contract_id": 3,
+      "service_id": 1,
+      "price": 3500,
+      "quantity": 1,
+      "notes": "Giá điện 3.500đ/kWh",
+      "created_at": "2024-12-01T00:00:00.000Z"
+    },
+    "cs_10": {
+      "id": 10,
+      "contract_id": 3,
+      "service_id": 2,
+      "price": 20000,
+      "quantity": 1,
+      "notes": "Giá nước 20.000đ/m³",
+      "created_at": "2024-12-01T00:00:00.000Z"
+    }
+  },
+  "vehicles": {
+    "vehicle_1": {
+      "id": 1,
+      "tenant_id": 1,
+      "vehicle_type": "motorcycle",
+      "brand": "Honda",
+      "model": "Wave Alpha",
+      "license_plate": "29A1-12345",
+      "color": "Đỏ",
+      "description": "Xe máy chạy tốt",
+      "image_url": null,
+      "created_at": "2025-01-05T00:00:00.000Z"
+    },
+    "vehicle_2": {
+      "id": 2,
+      "tenant_id": 1,
+      "vehicle_type": "motorcycle",
+      "brand": "Yamaha",
+      "model": "Sirius",
+      "license_plate": "29B2-67890",
+      "color": "Xanh",
+      "description": "Xe của người đồng thuê",
+      "image_url": null,
+      "created_at": "2025-01-06T00:00:00.000Z"
+    },
+    "vehicle_3": {
+      "id": 3,
+      "tenant_id": 3,
+      "vehicle_type": "bicycle",
+      "brand": "Giant",
+      "model": "ATX",
+      "license_plate": null,
+      "color": "Đen",
+      "description": "Xe đạp thể thao",
+      "image_url": null,
+      "created_at": "2025-01-07T00:00:00.000Z"
+    }
+  },
+  "invoices": {
+    "invoice_1": {
+      "id": 1,
+      "contract_id": 1,
+      "invoice_number": "HD202501001",
+      "invoice_date": "2025-01-25",
+      "due_date": "2025-02-05",
+      "period_month": 1,
+      "period_year": 2025,
+      "actual_days": 31,
+      "rent_amount": 3000000,
+      "service_amount": 600000,
+      "previous_debt": 0,
+      "total_amount": 3600000,
+      "paid_amount": 3600000,
+      "remaining_amount": 0,
+      "status": "paid",
+      "qr_code": null,
+      "notes": "Đã thanh toán đầy đủ",
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "invoice_2": {
+      "id": 2,
+      "contract_id": 2,
+      "invoice_number": "HD202501002",
+      "invoice_date": "2025-01-30",
+      "due_date": "2025-02-10",
+      "period_month": 1,
+      "period_year": 2025,
+      "actual_days": 17,
+      "rent_amount": 1900000,
+      "service_amount": 350000,
+      "previous_debt": 0,
+      "total_amount": 2250000,
+      "paid_amount": 0,
+      "remaining_amount": 2250000,
+      "status": "pending",
+      "qr_code": null,
+      "notes": "Hóa đơn tháng 1 (từ ngày 15/01)",
+      "created_at": "2025-01-30T00:00:00.000Z"
+    },
+    "invoice_3": {
+      "id": 3,
+      "contract_id": 3,
+      "invoice_number": "HD202501003",
+      "invoice_date": "2025-01-25",
+      "due_date": "2025-02-05",
+      "period_month": 1,
+      "period_year": 2025,
+      "actual_days": 31,
+      "rent_amount": 3200000,
+      "service_amount": 450000,
+      "previous_debt": 0,
+      "total_amount": 3650000,
+      "paid_amount": 2000000,
+      "remaining_amount": 1650000,
+      "status": "partial",
+      "qr_code": null,
+      "notes": "Đã thanh toán một phần",
+      "created_at": "2025-01-25T00:00:00.000Z"
+    }
+  },
+  "invoice_services": {
+    "is_1": {
+      "id": 1,
+      "invoice_id": 1,
+      "service_id": 1,
+      "service_name": "Điện",
+      "price": 3500,
+      "quantity": 100,
+      "amount": 350000,
+      "meter_start": 100,
+      "meter_end": 200,
+      "meter_usage": 100,
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "is_2": {
+      "id": 2,
+      "invoice_id": 1,
+      "service_id": 2,
+      "service_name": "Nước",
+      "price": 20000,
+      "quantity": 5,
+      "amount": 100000,
+      "meter_start": 50,
+      "meter_end": 55,
+      "meter_usage": 5,
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "is_3": {
+      "id": 3,
+      "invoice_id": 1,
+      "service_id": 3,
+      "service_name": "Internet",
+      "price": 100000,
+      "quantity": 1,
+      "amount": 100000,
+      "meter_start": null,
+      "meter_end": null,
+      "meter_usage": null,
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "is_4": {
+      "id": 4,
+      "invoice_id": 1,
+      "service_id": 4,
+      "service_name": "Vệ sinh chung",
+      "price": 50000,
+      "quantity": 1,
+      "amount": 50000,
+      "meter_start": null,
+      "meter_end": null,
+      "meter_usage": null,
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "is_5": {
+      "id": 5,
+      "invoice_id": 2,
+      "service_id": 1,
+      "service_name": "Điện",
+      "price": 3500,
+      "quantity": 80,
+      "amount": 280000,
+      "meter_start": 0,
+      "meter_end": 80,
+      "meter_usage": 80,
+      "created_at": "2025-01-30T00:00:00.000Z"
+    },
+    "is_6": {
+      "id": 6,
+      "invoice_id": 2,
+      "service_id": 2,
+      "service_name": "Nước",
+      "price": 20000,
+      "quantity": 3,
+      "amount": 60000,
+      "meter_start": 0,
+      "meter_end": 3,
+      "meter_usage": 3,
+      "created_at": "2025-01-30T00:00:00.000Z"
+    }
+  },
+  "accounts": {
+    "account_1": {
+      "id": 1,
+      "name": "Tài khoản Vietcombank",
+      "type": "bank",
+      "account_number": "0011234567890",
+      "account_holder": "CÔNG TY TNHH NHÀ TRỌ AN BÌNH",
+      "bank_name": "Vietcombank",
+      "bank_branch": "Chi nhánh Hà Nội",
+      "qr_code": null,
+      "opening_balance": 50000000,
+      "current_balance": 55600000,
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "account_2": {
+      "id": 2,
+      "name": "Tiền mặt",
+      "type": "cash",
+      "account_number": null,
+      "account_holder": null,
+      "bank_name": null,
+      "bank_branch": null,
+      "qr_code": null,
+      "opening_balance": 10000000,
+      "current_balance": 12000000,
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "account_3": {
+      "id": 3,
+      "name": "Tài khoản Techcombank",
+      "type": "bank",
+      "account_number": "19123456789",
+      "account_holder": "CÔNG TY TNHH NHÀ TRỌ AN BÌNH",
+      "bank_name": "Techcombank",
+      "bank_branch": "Chi nhánh Cầu Giấy",
+      "qr_code": null,
+      "opening_balance": 30000000,
+      "current_balance": 32250000,
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "financial_categories": {
+    "category_1": {
+      "id": 1,
+      "name": "Tiền thuê nhà",
+      "code": "TN001",
+      "type": "income",
+      "description": "Thu tiền thuê phòng hàng tháng",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "category_2": {
+      "id": 2,
+      "name": "Tiền dịch vụ",
+      "code": "TN002",
+      "type": "income",
+      "description": "Thu tiền điện, nước, internet, vệ sinh",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "category_3": {
+      "id": 3,
+      "name": "Tiền đặt cọc",
+      "code": "TN003",
+      "type": "income",
+      "description": "Thu tiền đặt cọc khi ký hợp đồng",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "category_4": {
+      "id": 4,
+      "name": "Sửa chữa, bảo trì",
+      "code": "TC001",
+      "type": "expense",
+      "description": "Chi phí sửa chữa, bảo trì tài sản",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "category_5": {
+      "id": 5,
+      "name": "Tiền điện nước chung",
+      "code": "TC002",
+      "type": "expense",
+      "description": "Chi phí điện nước khu vực chung",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "category_6": {
+      "id": 6,
+      "name": "Lương nhân viên",
+      "code": "TC003",
+      "type": "expense",
+      "description": "Chi trả lương nhân viên",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "assets": {
+    "asset_1": {
+      "id": 1,
+      "name": "Điều hòa Daikin 12000BTU",
+      "type": "equipment",
+      "description": "Điều hòa 2 chiều",
+      "value": 12000000,
+      "status": "good",
+      "purchase_date": "2024-06-01",
+      "location_type": "room",
+      "room_id": 1,
+      "branch_id": 1,
+      "serial_number": "DK123456789",
+      "manufacturer": "Daikin",
+      "model": "FTKC35UAVMV",
+      "warranty_expiry": "2026-06-01",
+      "notes": "Bảo hành 2 năm",
+      "created_at": "2024-06-01T00:00:00.000Z"
+    },
+    "asset_2": {
+      "id": 2,
+      "name": "Giường ngủ 1m6",
+      "type": "furniture",
+      "description": "Giường gỗ công nghiệp",
+      "value": 3000000,
+      "status": "good",
+      "purchase_date": "2024-01-01",
+      "location_type": "room",
+      "room_id": 1,
+      "branch_id": 1,
+      "serial_number": null,
+      "manufacturer": null,
+      "model": null,
+      "warranty_expiry": null,
+      "notes": null,
+      "created_at": "2024-01-01T00:00:00.000Z"
+    },
+    "asset_3": {
+      "id": 3,
+      "name": "Tủ quần áo 3 buồng",
+      "type": "furniture",
+      "description": "Tủ gỗ công nghiệp",
+      "value": 2500000,
+      "status": "good",
+      "purchase_date": "2024-01-01",
+      "location_type": "room",
+      "room_id": 3,
+      "branch_id": 1,
+      "serial_number": null,
+      "manufacturer": null,
+      "model": null,
+      "warranty_expiry": null,
+      "notes": null,
+      "created_at": "2024-01-01T00:00:00.000Z"
+    },
+    "asset_4": {
+      "id": 4,
+      "name": "Máy giặt Samsung 9kg",
+      "type": "equipment",
+      "description": "Máy giặt cửa trước",
+      "value": 8000000,
+      "status": "good",
+      "purchase_date": "2024-03-01",
+      "location_type": "branch",
+      "room_id": null,
+      "branch_id": 1,
+      "serial_number": "SS987654321",
+      "manufacturer": "Samsung",
+      "model": "WW90TP44DSH/SV",
+      "warranty_expiry": "2026-03-01",
+      "notes": "Máy giặt khu vực chung",
+      "created_at": "2024-03-01T00:00:00.000Z"
+    }
+  },
+  "images": {
+    "image_1": {
+      "id": 1,
+      "name": "Phòng 101 - Toàn cảnh",
+      "description": "Ảnh tổng quan phòng 101",
+      "image_url": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      "location_type": "room",
+      "room_id": 1,
+      "branch_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "image_2": {
+      "id": 2,
+      "name": "Phòng 101 - Phòng ngủ",
+      "description": "Khu vực phòng ngủ",
+      "image_url": "https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800",
+      "location_type": "room",
+      "room_id": 1,
+      "branch_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "image_3": {
+      "id": 3,
+      "name": "Chi nhánh Cầu Giấy - Mặt tiền",
+      "description": "Ảnh mặt tiền tòa nhà",
+      "image_url": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800",
+      "location_type": "branch",
+      "room_id": null,
+      "branch_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "tasks": {
+    "task_1": {
+      "id": 1,
+      "title": "Sửa chữa điều hòa phòng 201",
+      "description": "Điều hòa không lạnh, cần kiểm tra và bơm gas",
+      "assigned_by": 2,
+      "assigned_to": 4,
+      "branch_id": 1,
+      "room_id": 3,
+      "status": "in_progress",
+      "priority": "high",
+      "due_date": "2025-02-10",
+      "progress": 50,
+      "result": null,
+      "notes": "Đã liên hệ thợ điều hòa",
+      "created_at": "2025-01-28T00:00:00.000Z",
+      "updated_at": "2025-02-01T00:00:00.000Z"
+    },
+    "task_2": {
+      "id": 2,
+      "title": "Kiểm tra đồng hồ điện nước tất cả phòng",
+      "description": "Ghi số đồng hồ tháng 2",
+      "assigned_by": 2,
+      "assigned_to": 4,
+      "branch_id": 1,
+      "room_id": null,
+      "status": "pending",
+      "priority": "medium",
+      "due_date": "2025-02-05",
+      "progress": 0,
+      "result": null,
+      "notes": null,
+      "created_at": "2025-02-01T00:00:00.000Z",
+      "updated_at": "2025-02-01T00:00:00.000Z"
+    },
+    "task_3": {
+      "id": 3,
+      "title": "Vệ sinh khu vực chung",
+      "description": "Dọn dẹp hành lang, cầu thang",
+      "assigned_by": 2,
+      "assigned_to": 4,
+      "branch_id": 1,
+      "room_id": null,
+      "status": "completed",
+      "priority": "low",
+      "due_date": "2025-01-30",
+      "progress": 100,
+      "result": "Đã hoàn thành vệ sinh toàn bộ khu vực",
+      "notes": null,
+      "created_at": "2025-01-29T00:00:00.000Z",
+      "updated_at": "2025-01-30T00:00:00.000Z"
+    }
+  },
+  "meter_readings": {
+    "reading_1": {
+      "id": 1,
+      "room_id": 1,
+      "service_id": 1,
+      "invoice_id": 1,
+      "reading_date": "2025-01-25",
+      "meter_start": 100,
+      "meter_end": 200,
+      "meter_usage": 100,
+      "recorded_by": 4,
+      "notes": "Ghi số tháng 1",
+      "created_at": "2025-01-25T00:00:00.000Z",
+      "updated_at": "2025-01-25T00:00:00.000Z"
+    },
+    "reading_2": {
+      "id": 2,
+      "room_id": 1,
+      "service_id": 2,
+      "invoice_id": 1,
+      "reading_date": "2025-01-25",
+      "meter_start": 50,
+      "meter_end": 55,
+      "meter_usage": 5,
+      "recorded_by": 4,
+      "notes": "Ghi số tháng 1",
+      "created_at": "2025-01-25T00:00:00.000Z",
+      "updated_at": "2025-01-25T00:00:00.000Z"
+    },
+    "reading_3": {
+      "id": 3,
+      "room_id": 3,
+      "service_id": 1,
+      "invoice_id": 2,
+      "reading_date": "2025-01-30",
+      "meter_start": 0,
+      "meter_end": 80,
+      "meter_usage": 80,
+      "recorded_by": 4,
+      "notes": "Ghi số tháng 1 (hợp đồng mới từ 15/01)",
+      "created_at": "2025-01-30T00:00:00.000Z",
+      "updated_at": "2025-01-30T00:00:00.000Z"
+    }
+  },
+  "notifications": {
+    "notification_1": {
+      "id": 1,
+      "title": "Chào mừng đến với hệ thống Nhà trọ An Bình",
+      "body": "Hệ thống quản lý nhà trọ đã sẵn sàng. Hãy bắt đầu quản lý nhà trọ của bạn!",
+      "type": "system.welcome",
+      "link_type": null,
+      "link_id": null,
+      "metadata": null,
+      "unique_key": "welcome-001",
+      "created_by": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "notification_2": {
+      "id": 2,
+      "title": "Hóa đơn mới được tạo",
+      "body": "Hóa đơn HD202501002 cho phòng P201 đã được tạo. Hạn thanh toán: 10/02/2025",
+      "type": "invoice.created",
+      "link_type": "invoice",
+      "link_id": 2,
+      "metadata": "{\"invoice_number\":\"HD202501002\",\"total_amount\":2250000}",
+      "unique_key": "invoice-created-2",
+      "created_by": 3,
+      "created_at": "2025-01-30T00:00:00.000Z"
+    },
+    "notification_3": {
+      "id": 3,
+      "title": "Công việc được giao",
+      "body": "Bạn được giao công việc: Sửa chữa điều hòa phòng 201. Hạn: 10/02/2025",
+      "type": "task.assigned",
+      "link_type": "task",
+      "link_id": 1,
+      "metadata": "{\"priority\":\"high\"}",
+      "unique_key": "task-assigned-1",
+      "created_by": 2,
+      "created_at": "2025-01-28T00:00:00.000Z"
+    }
+  },
+  "notification_recipients": {
+    "nr_1": {
+      "id": 1,
+      "notification_id": 1,
+      "user_id": 1,
+      "is_read": 1,
+      "read_at": "2025-01-01T08:00:00.000Z",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "nr_2": {
+      "id": 2,
+      "notification_id": 1,
+      "user_id": 2,
+      "is_read": 1,
+      "read_at": "2025-01-01T09:00:00.000Z",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "nr_3": {
+      "id": 3,
+      "notification_id": 2,
+      "user_id": 3,
+      "is_read": 0,
+      "read_at": null,
+      "created_at": "2025-01-30T00:00:00.000Z"
+    },
+    "nr_4": {
+      "id": 4,
+      "notification_id": 3,
+      "user_id": 4,
+      "is_read": 0,
+      "read_at": null,
+      "created_at": "2025-01-28T00:00:00.000Z"
+    }
+  },
+  "permissions": {
+    "permission_1": {
+      "id": 1,
+      "module_code": "dashboard",
+      "module_name": "Tổng quan",
+      "action": "view",
+      "action_name": "Xem",
+      "description": "Xem trang tổng quan",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "permission_2": {
+      "id": 2,
+      "module_code": "branches",
+      "module_name": "Chi nhánh",
+      "action": "view",
+      "action_name": "Xem",
+      "description": "Xem danh sách chi nhánh",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "permission_3": {
+      "id": 3,
+      "module_code": "branches",
+      "module_name": "Chi nhánh",
+      "action": "create",
+      "action_name": "Thêm",
+      "description": "Tạo chi nhánh mới",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "permission_4": {
+      "id": 4,
+      "module_code": "branches",
+      "module_name": "Chi nhánh",
+      "action": "update",
+      "action_name": "Sửa",
+      "description": "Cập nhật thông tin chi nhánh",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "permission_5": {
+      "id": 5,
+      "module_code": "branches",
+      "module_name": "Chi nhánh",
+      "action": "delete",
+      "action_name": "Xóa",
+      "description": "Xóa chi nhánh",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "roles": {
+    "role_1": {
+      "id": 1,
+      "name": "Administrator",
+      "code": "admin",
+      "description": "Quản trị viên hệ thống - có toàn quyền",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "role_2": {
+      "id": 2,
+      "name": "Quản lý",
+      "code": "manager",
+      "description": "Quản lý chi nhánh",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "role_3": {
+      "id": 3,
+      "name": "Kế toán",
+      "code": "accountant",
+      "description": "Quản lý tài chính",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "role_4": {
+      "id": 4,
+      "name": "Nhân viên",
+      "code": "user",
+      "description": "Nhân viên văn phòng",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "role_permissions": {
+    "rp_1": {
+      "id": 1,
+      "role_id": 1,
+      "permission_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "rp_2": {
+      "id": 2,
+      "role_id": 1,
+      "permission_id": 2,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "rp_3": {
+      "id": 3,
+      "role_id": 1,
+      "permission_id": 3,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "rp_4": {
+      "id": 4,
+      "role_id": 2,
+      "permission_id": 1,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    },
+    "rp_5": {
+      "id": 5,
+      "role_id": 2,
+      "permission_id": 2,
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "settings": {
+    "settings_1": {
+      "id": 1,
+      "app_name": "Nhà Trọ An Bình",
+      "app_logo": null,
+      "company_name": "CÔNG TY TNHH NHÀ TRỌ AN BÌNH",
+      "company_address": "123 Đường Cầu Giấy, Quận Cầu Giấy, Hà Nội",
+      "company_phone": "024-1234-5678",
+      "company_email": "contact@nhatroanbirth.vn",
+      "company_website": "https://nhatroanbirth.vn",
+      "company_tax_code": "0123456789",
+      "company_representative": "Nguyễn Văn Đại Diện",
+      "company_representative_position": "Giám đốc",
+      "company_bank_account": "0011234567890",
+      "company_bank_name": "Vietcombank",
+      "company_bank_branch": "Chi nhánh Hà Nội",
+      "notes": "Hệ thống quản lý nhà trọ chuyên nghiệp",
+      "created_at": "2025-01-01T00:00:00.000Z"
+    }
+  },
+  "transactions": {
+    "transaction_1": {
+      "id": 1,
+      "type": "income",
+      "category_id": 1,
+      "account_id": 1,
+      "transaction_date": "2025-01-25",
+      "amount": 3000000,
+      "description": "Thu tiền thuê phòng P101 - tháng 01/2025",
+      "reference_type": "invoice",
+      "reference_id": 1,
+      "notes": "Thanh toán đầy đủ",
+      "created_by": 3,
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "transaction_2": {
+      "id": 2,
+      "type": "income",
+      "category_id": 2,
+      "account_id": 1,
+      "transaction_date": "2025-01-25",
+      "amount": 600000,
+      "description": "Thu tiền dịch vụ P101 - tháng 01/2025",
+      "reference_type": "invoice",
+      "reference_id": 1,
+      "notes": "Điện nước, internet",
+      "created_by": 3,
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "transaction_3": {
+      "id": 3,
+      "type": "expense",
+      "category_id": 4,
+      "account_id": 2,
+      "transaction_date": "2025-01-20",
+      "amount": 500000,
+      "description": "Sửa chữa điều hòa phòng P201",
+      "reference_type": null,
+      "reference_id": null,
+      "notes": "Bơm gas điều hòa",
+      "created_by": 2,
+      "created_at": "2025-01-20T00:00:00.000Z"
+    },
+    "transaction_4": {
+      "id": 4,
+      "type": "income",
+      "category_id": 1,
+      "account_id": 1,
+      "transaction_date": "2025-01-25",
+      "amount": 2000000,
+      "description": "Thu tiền thuê phòng P102 (chi nhánh 2) - tháng 01/2025 (tạm ứng)",
+      "reference_type": "invoice",
+      "reference_id": 3,
+      "notes": "Thanh toán một phần",
+      "created_by": 3,
+      "created_at": "2025-01-25T00:00:00.000Z"
+    },
+    "transaction_5": {
+      "id": 5,
+      "type": "expense",
+      "category_id": 6,
+      "account_id": 1,
+      "transaction_date": "2025-01-31",
+      "amount": 8000000,
+      "description": "Trả lương nhân viên tháng 01/2025",
+      "reference_type": null,
+      "reference_id": null,
+      "notes": "Lương 4 nhân viên",
+      "created_by": 1,
+      "created_at": "2025-01-31T00:00:00.000Z"
+    }
+  }
+}
+
