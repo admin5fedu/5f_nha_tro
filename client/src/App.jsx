@@ -60,101 +60,104 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
 
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="users" element={<UsersList />} />
-              <Route path="users/new" element={<UserForm />} />
-              <Route path="users/:id" element={<UserDetail />} />
-              <Route path="users/:id/edit" element={<UserForm />} />
-              <Route path="branches" element={<BranchesList />} />
-              <Route path="branches/new" element={<BranchForm />} />
-              <Route path="branches/:id" element={<BranchDetail />} />
-              <Route path="branches/:id/edit" element={<BranchForm />} />
-              <Route path="rooms" element={<RoomsList />} />
-              <Route path="rooms/new" element={<RoomForm />} />
-              <Route path="rooms/:id" element={<RoomDetail />} />
-              <Route path="rooms/:id/edit" element={<RoomForm />} />
-              <Route path="tenants" element={<TenantsList />} />
-              <Route path="tenants/new" element={<TenantForm />} />
-              <Route path="tenants/:id" element={<TenantDetail />} />
-              <Route path="tenants/:id/edit" element={<TenantForm />} />
-              <Route path="contracts" element={<ContractsList />} />
-              <Route path="contracts/new" element={<ContractForm />} />
-              <Route path="contracts/:id" element={<ContractDetail />} />
-              <Route path="contracts/:id/edit" element={<ContractForm />} />
-              <Route path="accounts" element={<AccountsList />} />
-              <Route path="accounts/new" element={<AccountForm />} />
-              <Route path="accounts/:id" element={<AccountDetail />} />
-              <Route path="accounts/:id/edit" element={<AccountForm />} />
-              <Route path="assets" element={<AssetsList />} />
-              <Route path="assets/new" element={<AssetForm />} />
-              <Route path="assets/:id" element={<AssetDetail />} />
-              <Route path="assets/:id/edit" element={<AssetForm />} />
-              <Route path="images" element={<ImagesList />} />
-              <Route path="images/new" element={<ImageForm />} />
-              <Route path="images/:id" element={<ImageDetail />} />
-              <Route path="images/:id/edit" element={<ImageForm />} />
-              <Route path="services" element={<ServicesList />} />
-              <Route path="services/new" element={<ServiceForm />} />
-              <Route path="services/:id" element={<ServiceDetail />} />
-              <Route path="services/:id/edit" element={<ServiceForm />} />
-              <Route path="vehicles" element={<VehiclesList />} />
-              <Route path="vehicles/new" element={<VehicleForm />} />
-              <Route path="vehicles/:id" element={<VehicleDetail />} />
-              <Route path="vehicles/:id/edit" element={<VehicleForm />} />
-              <Route path="invoices" element={<InvoicesList />} />
-              <Route path="invoices/new" element={<InvoiceForm />} />
-              <Route path="invoices/:id" element={<InvoiceDetail />} />
-              <Route path="invoices/:id/edit" element={<InvoiceForm />} />
-              <Route path="financial-categories" element={<FinancialCategoriesList />} />
-              <Route path="financial-categories/new" element={<FinancialCategoryForm />} />
-              <Route path="financial-categories/:id" element={<FinancialCategoryDetail />} />
-              <Route path="financial-categories/:id/edit" element={<FinancialCategoryForm />} />
-              <Route path="transactions" element={<TransactionsList />} />
-              <Route path="transactions/new" element={<TransactionForm />} />
-              <Route path="transactions/:id" element={<TransactionDetail />} />
-              <Route path="transactions/:id/edit" element={<TransactionForm />} />
-              <Route path="reports/profit-loss" element={<ProfitLossReport />} />
-              <Route path="reports/accounts-receivable" element={<AccountsReceivableReport />} />
-              <Route path="reports/revenue" element={<RevenueAnalysisReport />} />
-              <Route path="reports/cashflow" element={<CashflowDetailReport />} />
-              <Route path="settings" element={<SettingsDetail />} />
-              <Route path="settings/edit" element={<SettingsForm />} />
-              <Route path="roles" element={<RolesList />} />
-              <Route path="roles/new" element={<RoleForm />} />
-              <Route path="roles/:id" element={<RoleDetail />} />
-              <Route path="roles/:id/edit" element={<RoleForm />} />
-              <Route path="permissions" element={<PermissionsManager />} />
-              <Route path="roles/:roleId/permissions" element={<PermissionsManager />} />
-              <Route path="tasks" element={<TasksList />} />
-              <Route path="tasks/new" element={<TaskForm />} />
-              <Route path="tasks/:id" element={<TaskDetail />} />
-              <Route path="tasks/:id/edit" element={<TaskForm />} />
-              <Route path="meter-readings" element={<MeterReadingsList />} />
-              <Route path="meter-readings/new" element={<MeterReadingForm />} />
-              <Route path="meter-readings/:id" element={<MeterReadingDetail />} />
-              <Route path="meter-readings/:id/edit" element={<MeterReadingForm />} />
-            </Route>
-          </Routes>
-        </Router>
-      </NotificationProvider>
+      <SettingsProvider>
+        <NotificationProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="users" element={<UsersList />} />
+                <Route path="users/new" element={<UserForm />} />
+                <Route path="users/:id" element={<UserDetail />} />
+                <Route path="users/:id/edit" element={<UserForm />} />
+                <Route path="branches" element={<BranchesList />} />
+                <Route path="branches/new" element={<BranchForm />} />
+                <Route path="branches/:id" element={<BranchDetail />} />
+                <Route path="branches/:id/edit" element={<BranchForm />} />
+                <Route path="rooms" element={<RoomsList />} />
+                <Route path="rooms/new" element={<RoomForm />} />
+                <Route path="rooms/:id" element={<RoomDetail />} />
+                <Route path="rooms/:id/edit" element={<RoomForm />} />
+                <Route path="tenants" element={<TenantsList />} />
+                <Route path="tenants/new" element={<TenantForm />} />
+                <Route path="tenants/:id" element={<TenantDetail />} />
+                <Route path="tenants/:id/edit" element={<TenantForm />} />
+                <Route path="contracts" element={<ContractsList />} />
+                <Route path="contracts/new" element={<ContractForm />} />
+                <Route path="contracts/:id" element={<ContractDetail />} />
+                <Route path="contracts/:id/edit" element={<ContractForm />} />
+                <Route path="accounts" element={<AccountsList />} />
+                <Route path="accounts/new" element={<AccountForm />} />
+                <Route path="accounts/:id" element={<AccountDetail />} />
+                <Route path="accounts/:id/edit" element={<AccountForm />} />
+                <Route path="assets" element={<AssetsList />} />
+                <Route path="assets/new" element={<AssetForm />} />
+                <Route path="assets/:id" element={<AssetDetail />} />
+                <Route path="assets/:id/edit" element={<AssetForm />} />
+                <Route path="images" element={<ImagesList />} />
+                <Route path="images/new" element={<ImageForm />} />
+                <Route path="images/:id" element={<ImageDetail />} />
+                <Route path="images/:id/edit" element={<ImageForm />} />
+                <Route path="services" element={<ServicesList />} />
+                <Route path="services/new" element={<ServiceForm />} />
+                <Route path="services/:id" element={<ServiceDetail />} />
+                <Route path="services/:id/edit" element={<ServiceForm />} />
+                <Route path="vehicles" element={<VehiclesList />} />
+                <Route path="vehicles/new" element={<VehicleForm />} />
+                <Route path="vehicles/:id" element={<VehicleDetail />} />
+                <Route path="vehicles/:id/edit" element={<VehicleForm />} />
+                <Route path="invoices" element={<InvoicesList />} />
+                <Route path="invoices/new" element={<InvoiceForm />} />
+                <Route path="invoices/:id" element={<InvoiceDetail />} />
+                <Route path="invoices/:id/edit" element={<InvoiceForm />} />
+                <Route path="financial-categories" element={<FinancialCategoriesList />} />
+                <Route path="financial-categories/new" element={<FinancialCategoryForm />} />
+                <Route path="financial-categories/:id" element={<FinancialCategoryDetail />} />
+                <Route path="financial-categories/:id/edit" element={<FinancialCategoryForm />} />
+                <Route path="transactions" element={<TransactionsList />} />
+                <Route path="transactions/new" element={<TransactionForm />} />
+                <Route path="transactions/:id" element={<TransactionDetail />} />
+                <Route path="transactions/:id/edit" element={<TransactionForm />} />
+                <Route path="reports/profit-loss" element={<ProfitLossReport />} />
+                <Route path="reports/accounts-receivable" element={<AccountsReceivableReport />} />
+                <Route path="reports/revenue" element={<RevenueAnalysisReport />} />
+                <Route path="reports/cashflow" element={<CashflowDetailReport />} />
+                <Route path="settings" element={<SettingsDetail />} />
+                <Route path="settings/edit" element={<SettingsForm />} />
+                <Route path="roles" element={<RolesList />} />
+                <Route path="roles/new" element={<RoleForm />} />
+                <Route path="roles/:id" element={<RoleDetail />} />
+                <Route path="roles/:id/edit" element={<RoleForm />} />
+                <Route path="permissions" element={<PermissionsManager />} />
+                <Route path="roles/:roleId/permissions" element={<PermissionsManager />} />
+                <Route path="tasks" element={<TasksList />} />
+                <Route path="tasks/new" element={<TaskForm />} />
+                <Route path="tasks/:id" element={<TaskDetail />} />
+                <Route path="tasks/:id/edit" element={<TaskForm />} />
+                <Route path="meter-readings" element={<MeterReadingsList />} />
+                <Route path="meter-readings/new" element={<MeterReadingForm />} />
+                <Route path="meter-readings/:id" element={<MeterReadingDetail />} />
+                <Route path="meter-readings/:id/edit" element={<MeterReadingForm />} />
+              </Route>
+            </Routes>
+          </Router>
+        </NotificationProvider>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

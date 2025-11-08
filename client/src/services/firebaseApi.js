@@ -12,6 +12,22 @@ import {
 
 const DEFAULT_DATE_RANGE_DAYS = 30;
 const CONTROL_FILTER_KEYS = new Set(['page', 'pageSize', 'limit', 'offset', 'sort', 'order']);
+const DEFAULT_SETTINGS = {
+  app_name: 'Nhà Trọ',
+  app_logo: null,
+  company_name: '',
+  company_address: '',
+  company_phone: '',
+  company_email: '',
+  company_website: '',
+  company_tax_code: '',
+  company_representative: '',
+  company_representative_position: '',
+  company_bank_account: '',
+  company_bank_name: '',
+  company_bank_branch: '',
+  notes: ''
+};
 
 // Helper: Convert Firebase object to array
 const objectToArray = (obj) => {
@@ -378,6 +394,24 @@ const aggregateNotifications = async (filters = {}) => {
 const aggregateNotificationsUnreadCount = async () => {
   const { unread_count } = await aggregateNotifications();
   return { unread_count };
+};
+
+const normalizeSettingsRecord = (record) => {
+  const safeRecord = record && typeof record === 'object' ? record : {};
+  const { firebase_key, ...rest } = safeRecord;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...rest
+  };
+};
+
+const aggregateSettings = async () => {
+  const records = await fetchCollection('settings');
+  if (!records || records.length === 0) {
+    return { ...DEFAULT_SETTINGS };
+  }
+  const sorted = [...records].sort((a, b) => toNumber(b.id, 0) - toNumber(a.id, 0));
+  return normalizeSettingsRecord(sorted[0]);
 };
 
 const aggregateProfitLossReport = async (filters = {}) => {
@@ -787,6 +821,8 @@ const handleSpecialGet = async (segments, filters) => {
       return aggregateRevenueAnalysis(filters);
     case 'reports/cashflow-detail':
       return aggregateCashflowDetail(filters);
+    case 'settings':
+      return aggregateSettings();
     case 'permissions':
       return aggregatePermissions();
     case 'permissions/modules':
@@ -894,6 +930,43 @@ const firebaseApi = {
       await ensureFirebaseAuthSession();
       const { collection } = parsePath(path);
       const dbRef = ref(database, collection);
+
+      if (collection === 'settings') {
+        const snapshot = await get(dbRef);
+        const existing = snapshot.exists() ? objectToArray(snapshot.val()) : [];
+        const isUpdate = existing.length > 0;
+
+        if (isUpdate) {
+          const sorted = [...existing].sort((a, b) => toNumber(b.id, 0) - toNumber(a.id, 0));
+          const current = sorted[0];
+          const firebaseKey = current.firebase_key || getFirebaseKey('settings', current.id || 1);
+          const updatedData = normalizeSettingsRecord({
+            ...current,
+            ...payload,
+            id: current.id || 1,
+            updated_at: new Date().toISOString()
+          });
+          await set(ref(database, `${collection}/${firebaseKey}`), updatedData);
+        } else {
+          const newId = 1;
+          const firebaseKey = getFirebaseKey('settings', newId);
+          const newData = normalizeSettingsRecord({
+            ...payload,
+            id: newId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+          await set(ref(database, `${collection}/${firebaseKey}`), newData);
+        }
+
+        const normalized = await aggregateSettings();
+        return {
+          data: {
+            ...normalized,
+            message: isUpdate ? 'Cập nhật thành công' : 'Tạo mới thành công'
+          }
+        };
+      }
 
       // Get current max ID to generate new ID
       const snapshot = await get(dbRef);

@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAppSettings } from '../context/SettingsContext';
 import Header from './Header';
 import { Button } from './ui/button';
 import {
@@ -50,6 +51,10 @@ const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
+  const { settings } = useAppSettings();
+  const appName = settings?.app_name?.trim() || 'Nhà Trọ';
+  const appLogo = settings?.app_logo || null;
+  const appInitial = appName.charAt(0).toUpperCase();
 
   // Auto-expand submenu if current path is in it
   useEffect(() => {
@@ -195,11 +200,23 @@ const Layout = () => {
           <div className="flex items-center justify-between flex-shrink-0 px-4 mb-8">
             {!sidebarCollapsed ? (
               <>
-                <div className="flex items-center flex-1">
-                  <div className="bg-white p-2 rounded-lg mr-3 shadow-md">
-                    <Building2 className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <h1 className="text-white text-xl font-bold">Nhà Trọ</h1>
+                <div className="flex items-center flex-1 min-w-0">
+                  {appLogo ? (
+                    <img
+                      src={appLogo}
+                      alt={appName}
+                      className="h-10 w-10 object-contain bg-white p-1.5 rounded-lg mr-3 shadow-md"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = '/vite.svg';
+                      }}
+                    />
+                  ) : (
+                    <div className="bg-white p-2 rounded-lg mr-3 shadow-md">
+                      <Building2 className="h-6 w-6 text-blue-600" />
+                    </div>
+                  )}
+                  <h1 className="text-white text-xl font-bold truncate">{appName}</h1>
                 </div>
                 <button
                   onClick={() => setSidebarCollapsed(true)}
@@ -211,9 +228,21 @@ const Layout = () => {
               </>
             ) : (
               <div className="flex flex-col items-center w-full gap-2">
-                <div className="bg-white p-2 rounded-lg shadow-md">
-                  <Building2 className="h-6 w-6 text-blue-600" />
-                </div>
+                {appLogo ? (
+                  <img
+                    src={appLogo}
+                    alt={appName}
+                    className="h-8 w-8 object-contain bg-white p-1 rounded-lg shadow-md"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = '/vite.svg';
+                    }}
+                  />
+                ) : (
+                  <div className="bg-white p-2 rounded-lg shadow-md">
+                    <Building2 className="h-6 w-6 text-blue-600" />
+                  </div>
+                )}
                 <button
                   onClick={() => setSidebarCollapsed(false)}
                   className="text-blue-200 hover:text-white hover:bg-blue-800 p-2 rounded-lg transition-colors w-full flex justify-center"
@@ -331,7 +360,7 @@ const Layout = () => {
           >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold shadow-md">
-                {user?.full_name?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                {user?.full_name?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || appInitial}
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm font-medium truncate">
@@ -351,7 +380,7 @@ const Layout = () => {
               className="h-10 w-10 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold shadow-md hover:bg-blue-600 transition-colors"
               title="Hồ sơ"
             >
-              {user?.full_name?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'U'}
+              {user?.full_name?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || appInitial}
             </button>
           </div>
         )}
@@ -375,10 +404,22 @@ const Layout = () => {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 to-blue-800 shadow-lg">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
-            <div className="bg-white p-1.5 rounded-lg">
-              <Building2 className="h-5 w-5 text-blue-600" />
-            </div>
-            <h1 className="text-white text-lg font-bold">Nhà Trọ</h1>
+            {appLogo ? (
+              <img
+                src={appLogo}
+                alt={appName}
+                className="h-8 w-8 object-contain bg-white p-1 rounded-lg"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = '/vite.svg';
+                }}
+              />
+            ) : (
+              <div className="bg-white p-1.5 rounded-lg">
+                <Building2 className="h-5 w-5 text-blue-600" />
+              </div>
+            )}
+            <h1 className="text-white text-lg font-bold truncate max-w-[160px]">{appName}</h1>
           </div>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

@@ -1,30 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import { ArrowLeft, Edit, Settings as SettingsIcon, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Edit, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { useAppSettings } from '../../context/SettingsContext';
 
 const SettingsDetail = () => {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { settings, loading, refresh } = useAppSettings();
 
   useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const response = await api.get('/settings');
-      setSettings(response.data);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-      alert('Lỗi khi tải thông tin thiết lập');
-    } finally {
-      setLoading(false);
+    if (!settings) {
+      refresh();
     }
-  };
+  }, [settings, refresh]);
 
   if (loading) {
     return <div className="text-center py-8">Đang tải...</div>;

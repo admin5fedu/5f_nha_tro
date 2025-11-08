@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { ArrowLeft, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Label } from '../../components/ui/label';
+import { useAppSettings } from '../../context/SettingsContext';
 
 const SettingsForm = () => {
   const navigate = useNavigate();
+  const { settings, updateSettings, refresh } = useAppSettings();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const defaults = useMemo(() => ({
     app_name: 'Nhà Trọ',
     app_logo: '',
     company_name: '',
@@ -24,22 +26,25 @@ const SettingsForm = () => {
     company_bank_name: '',
     company_bank_branch: '',
     notes: ''
-  });
+  }), []);
+  const [formData, setFormData] = useState(() => ({
+    ...defaults,
+    ...(settings || {})
+  }));
 
   useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const response = await api.get('/settings');
-      if (response.data) {
-        setFormData(response.data);
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
+    if (settings) {
+      setFormData({
+        ...defaults,
+        ...settings
+      });
     }
-  };
+  }, [settings, defaults]);
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -56,7 +61,13 @@ const SettingsForm = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/settings', formData);
+      const response = await api.post('/settings', formData);
+      const savedSettings = {
+        ...formData,
+        ...(response?.data || {})
+      };
+      delete savedSettings.message;
+      updateSettings(savedSettings);
       alert('Lưu thiết lập thành công');
       navigate('/settings');
     } catch (error) {
