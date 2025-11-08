@@ -7,7 +7,7 @@ import {
   linkWithCredential,
   EmailAuthProvider
 } from 'firebase/auth';
-import { ref, get } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
 import bcrypt from 'bcryptjs';
 
 let pendingAuthPromise = null;
@@ -151,6 +151,21 @@ export const loginWithCredentials = async (identifier, password) => {
       timestamp: Date.now() 
     }));
     
+    // Persist role mapping for security rules (role lookup by UID)
+    try {
+      if (auth.currentUser?.uid) {
+        await set(ref(database, `user_roles/${auth.currentUser.uid}`), {
+          role: user.role,
+          user_id: user.id,
+          username: user.username,
+          email: user.email,
+          synced_at: new Date().toISOString()
+        });
+      }
+    } catch (syncError) {
+      console.warn('Không thể đồng bộ quyền người dùng:', syncError);
+    }
+
     // Remove sensitive data
     const { password: _, firebase_key, ...userData } = user;
     
