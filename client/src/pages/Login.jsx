@@ -8,6 +8,7 @@ import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -80,13 +81,20 @@ const Login = () => {
               </div>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Nhập mật khẩu"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                {showPassword ? 'Ẩn' : 'Hiện'}
+              </button>
             </div>
           </div>
 
@@ -128,9 +136,6 @@ const Login = () => {
             Đăng nhập với Google
           </Button>
 
-          <div className="text-sm text-gray-600 text-center mt-4">
-            <p>Demo: admin@example.com / admin</p>
-          </div>
         </form>
         </CardContent>
       </Card>

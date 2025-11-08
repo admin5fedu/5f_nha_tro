@@ -80,31 +80,29 @@ const verifyPassword = async (plainPassword, hashedPassword) => {
  * but our system uses username as primary identifier
  */
 export const loginWithCredentials = async (identifier, password) => {
+  const toError = (message) => ({
+    success: false,
+    error: message
+  });
+
   try {
     // Find user in database
     await ensureFirebaseAuthSession();
     const user = await findUserByIdentifier(identifier);
     
     if (!user) {
-      throw new Error('Tên đăng nhập hoặc email không tồn tại');
+      return toError('Tài khoản không tồn tại');
     }
     
     // Check if user is active
     if (user.status !== 'active') {
-      throw new Error('Tài khoản đã bị khóa');
+      return toError('Tài khoản đã bị khóa');
     }
     
-    // Verify password
-    const isPasswordValid = await verifyPassword(password, user.password);
-    
-    if (!isPasswordValid) {
-      throw new Error('Mật khẩu không chính xác');
-    }
-
     // Ensure we have an authenticated Firebase user (upgrade from anonymous)
     const email = user.email;
     if (!email) {
-      throw new Error('Tài khoản không có email hợp lệ');
+      return toError('Tài khoản chưa được cấu hình email đăng nhập');
     }
 
     const credential = EmailAuthProvider.credential(email, password);
@@ -114,10 +112,21 @@ export const loginWithCredentials = async (identifier, password) => {
         await linkWithCredential(auth.currentUser, credential);
       } catch (error) {
         if (error.code === 'auth/credential-already-in-use') {
-          await signInWithEmailAndPassword(auth, email, password);
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+          } catch (signInError) {
+            if (signInError.code === 'auth/user-not-found') {
+              return toError('Tài khoản chưa tồn tại trong hệ thống xác thực');
+            }
+            if (signInError.code === 'auth/wrong-password') {
+              return toError('Mật khẩu không chính xác');
+            }
+            console.error('Firebase sign-in failed:', signInError);
+            return toError('Không thể xác thực người dùng. Vui lòng thử lại.');
+          }
         } else {
           console.error('Error linking anonymous user:', error);
-          throw new Error('Không thể xác thực người dùng. Vui lòng thử lại.');
+          return toError('Không thể xác thực người dùng. Vui lòng thử lại.');
         }
       }
     } else if (!auth.currentUser || auth.currentUser.email !== email) {
@@ -125,23 +134,20 @@ export const loginWithCredentials = async (identifier, password) => {
         await signInWithEmailAndPassword(auth, email, password);
       } catch (error) {
         if (error.code === 'auth/user-not-found') {
-          // If email/password account does not exist, create by linking from anonymous session
-          await ensureFirebaseAuthSession();
-          if (auth.currentUser?.isAnonymous) {
-            try {
-              await linkWithCredential(auth.currentUser, credential);
-            } catch (linkError) {
-              console.error('Error linking anonymous user after user-not-found:', linkError);
-              throw new Error('Không thể tạo tài khoản xác thực. Vui lòng liên hệ quản trị viên.');
-            }
-          } else {
-            throw new Error('Tài khoản chưa được cấu hình xác thực.');
-          }
-        } else {
-          console.error('Firebase email/password sign-in failed:', error);
-          throw new Error('Không thể xác thực người dùng. Vui lòng thử lại.');
+          return toError('Tài khoản chưa tồn tại trong hệ thống xác thực');
         }
+        if (error.code === 'auth/wrong-password') {
+          return toError('Mật khẩu không chính xác');
+        }
+        console.error('Firebase email/password sign-in failed:', error);
+        return toError('Không thể xác thực người dùng. Vui lòng thử lại.');
       }
+    }
+
+    // Verify password against local hash
+    const isPasswordValid = await verifyPassword(password, user.password);
+    if (!isPasswordValid) {
+      return toError('Mật khẩu không chính xác');
     }
     
     // Create a mock token (in real app, you'd use Firebase Custom Tokens)
@@ -175,10 +181,8 @@ export const loginWithCredentials = async (identifier, password) => {
       user: userData
     };
   } catch (error) {
-    return {
-      success: false,
-      error: error.message || 'Đăng nhập thất bại'
-    };
+    console.error('Đăng nhập thất bại:', error);
+    return toError('Đăng nhập thất bại');
   }
 };
 

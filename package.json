@@ -22,7 +22,8 @@
     "sqlite3": "^5.1.6",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "express-validator": "^7.0.1"
+    "express-validator": "^7.0.1",
+    "firebase-admin": "^11.10.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",

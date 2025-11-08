@@ -7,6 +7,7 @@ const {
   notifyUserCreated,
   notifyUserStatusChanged
 } = require('../utils/notificationEvents');
+const { syncFirebaseAuthUser } = require('../utils/firebaseAuthSync');
 const router = express.Router();
 
 router.use(authenticateToken);
@@ -284,7 +285,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO users (username, password, full_name, email, phone, address, role, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [username, hashedPassword, full_name, email || null, phone || null, address || null, role, status],
-      function(err) {
+      async function(err) {
         if (err) {
           if (err.message.includes('UNIQUE constraint')) {
             return res.status(400).json({ error: 'Username already exists' });
@@ -302,6 +303,16 @@ router.post('/', async (req, res) => {
           });
           stmt.finalize();
         }
+
+        await syncFirebaseAuthUser({
+          userId,
+          fullName: full_name,
+          email: email || null,
+          role,
+          status,
+          password: plainPassword,
+          existingEmail: null
+        });
 
         res.json({ id: userId, ...req.body, password: undefined });
 
@@ -359,7 +370,7 @@ router.put('/:id', async (req, res) => {
     updateQuery += ' WHERE id = ?';
     params.push(req.params.id);
 
-    db.run(updateQuery, params, function(err) {
+    db.run(updateQuery, params, async function(err) {
       if (err) {
         if (err.message.includes('UNIQUE constraint')) {
           return res.status(400).json({ error: 'Username already exists' });
@@ -384,6 +395,16 @@ router.put('/:id', async (req, res) => {
           }
         });
       }
+
+      await syncFirebaseAuthUser({
+        userId: req.params.id,
+        fullName: full_name,
+        email: email || null,
+        role,
+        status,
+        password,
+        existingEmail: existingUser.email || null
+      });
 
       res.json({ message: 'User updated successfully' });
 
