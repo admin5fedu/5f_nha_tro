@@ -1,6 +1,7 @@
 // Firebase Realtime Database API Wrapper
 // This wrapper provides axios-like interface for Firebase operations
 import { database } from './firebase';
+import { ensureFirebaseAuthSession } from './firebaseAuth';
 import {
   ref,
   get,
@@ -808,6 +809,7 @@ const firebaseApi = {
    */
   async get(path, config = {}) {
     try {
+      await ensureFirebaseAuthSession();
       // Parse URL and query params
       const [pathname, queryString] = path.split('?');
       const { collection, id, idSegment, subSegments, segments } = parsePath(pathname);
@@ -889,6 +891,7 @@ const firebaseApi = {
    */
   async post(path, payload, config = {}) {
     try {
+      await ensureFirebaseAuthSession();
       const { collection } = parsePath(path);
       const dbRef = ref(database, collection);
 
@@ -929,6 +932,7 @@ const firebaseApi = {
    */
   async put(path, payload, config = {}) {
     try {
+      await ensureFirebaseAuthSession();
       const { collection, id } = parsePath(path);
 
       // Special handling for permissions assignment
@@ -1026,6 +1030,7 @@ const firebaseApi = {
    * @param {object} payload - Data to update
    */
   async patch(path, payload) {
+    await ensureFirebaseAuthSession();
     const { collection, segments } = parsePath(path);
 
     if (collection === 'notifications' && segments[1] === 'mark-all-read') {
@@ -1101,6 +1106,7 @@ const firebaseApi = {
    */
   async delete(path) {
     try {
+      await ensureFirebaseAuthSession();
       const { collection, id } = parsePath(path);
 
       if (!id) {
