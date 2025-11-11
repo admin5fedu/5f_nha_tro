@@ -1,5 +1,4 @@
 const { init, getDb, close } = require('../database/db');
-const bcrypt = require('bcryptjs');
 
 async function seedRoles() {
   try {
@@ -179,49 +178,36 @@ async function seedUsers(db, resolve, reject) {
       ];
 
       const stmt = db.prepare(
-        `INSERT INTO users (username, password, full_name, email, phone, address, role, status) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (username, full_name, email, phone, address, role, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       );
 
       let completed = 0;
       for (const user of sampleUsers) {
-        try {
-          const hashedPassword = await bcrypt.hash(user.password, 10);
-          stmt.run(
-            user.username,
-            hashedPassword,
-            user.full_name,
-            user.email,
-            user.phone,
-            user.address,
-            user.role,
-            user.status,
-            (err) => {
-              if (err) {
-                console.error(`Error inserting user ${user.username}:`, err);
-              } else {
-                console.log(`✅ Inserted user: ${user.full_name} (${user.role})`);
-              }
-              completed++;
-              if (completed === sampleUsers.length) {
-                stmt.finalize(() => {
-                  console.log('✅ All users inserted');
-                  close();
-                  resolve();
-                });
-              }
+        stmt.run(
+          user.username,
+          user.full_name,
+          user.email,
+          user.phone,
+          user.address,
+          user.role,
+          user.status,
+          (err) => {
+            if (err) {
+              console.error(`Error inserting user ${user.username}:`, err);
+            } else {
+              console.log(`✅ Inserted user: ${user.full_name} (${user.role})`);
             }
-          );
-        } catch (error) {
-          console.error(`Error hashing password for ${user.username}:`, error);
-          completed++;
-          if (completed === sampleUsers.length) {
-            stmt.finalize(() => {
-              close();
-              resolve();
-            });
+            completed++;
+            if (completed === sampleUsers.length) {
+              stmt.finalize(() => {
+                console.log('✅ All users inserted');
+                close();
+                resolve();
+              });
+            }
           }
-        }
+        );
       }
     });
   });

@@ -25,7 +25,6 @@ const createTables = () => {
       db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
         full_name TEXT NOT NULL,
         email TEXT,
         phone TEXT,
@@ -386,8 +385,8 @@ const createTables = () => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_notification_recipients_user ON notification_recipients(user_id, is_read)`);
 
       // Insert default admin user
-      db.run(`INSERT OR IGNORE INTO users (username, password, full_name, role) 
-        VALUES ('admin', '$2a$10$rOzJk3ZQYQYQYQYQYQYQYOuQYQYQYQYQYQYQYQYQYQYQYQYQYQYQ', 'Administrator', 'admin')`, (err) => {
+      db.run(`INSERT OR IGNORE INTO users (username, full_name, role) 
+        VALUES ('admin', 'Administrator', 'admin')`, (err) => {
         if (err) {
           console.error('Error creating default user:', err);
         } else {

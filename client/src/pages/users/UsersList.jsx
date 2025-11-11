@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import { Plus, Edit, Trash2, Eye, UserCog, Mail, Phone, Building2 } from 'lucide-react';
+import { Plus, Edit, Trash2, UserCog, Mail, Phone, Building2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import FilterPanel from '../../components/FilterPanel';
 import { objectContainsTerm } from '../../utils/search';
+import { fetchUsers, deleteUser as deleteUserSupabase } from '../../services/supabaseUsers';
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
@@ -19,11 +19,11 @@ const UsersList = () => {
 
   const loadUsers = async () => {
     try {
-      const response = await api.get('/users');
-      setUsers(response.data);
+      const data = await fetchUsers();
+      setUsers(data);
     } catch (error) {
       console.error('Error loading users:', error);
-      alert('Lỗi khi tải danh sách nhân viên');
+      alert(error.message || 'Lỗi khi tải danh sách nhân viên');
     } finally {
       setLoading(false);
     }
@@ -32,29 +32,31 @@ const UsersList = () => {
   const handleDelete = async (id) => {
     if (!confirm('Bạn có chắc muốn xóa nhân viên này?')) return;
     try {
-      await api.delete(`/users/${id}`);
+      await deleteUserSupabase(id);
       loadUsers();
     } catch (error) {
-      alert(error.response?.data?.error || 'Lỗi khi xóa nhân viên');
+      alert(error.message || 'Lỗi khi xóa nhân viên');
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = !filters.search || objectContainsTerm(user, filters.search);
-    const matchesRole = !filters.role || user.role === filters.role;
-    const matchesStatus = !filters.status || user.status === filters.status;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  const roleOptions = useMemo(() => {
+    const map = new Map();
+    users.forEach((user) => {
+      const code = user.roles?.code;
+      const label = user.roles?.name || user.roles?.code;
+      if (code && !map.has(code)) {
+        map.set(code, label);
+      }
+    });
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [users]);
 
-  const filterConfig = [
+  const filterConfig = useMemo(() => [
     {
       key: 'role',
       label: 'Vai trò',
       type: 'select',
-      options: [
-        { value: 'admin', label: 'Admin' },
-        { value: 'user', label: 'User' }
-      ]
+      options: roleOptions
     },
     {
       key: 'status',
@@ -65,7 +67,14 @@ const UsersList = () => {
         { value: 'inactive', label: 'Ngừng hoạt động' }
       ]
     }
-  ];
+  ], [roleOptions]);
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = !filters.search || objectContainsTerm(user, filters.search);
+    const matchesRole = !filters.role || user.roles?.code === filters.role;
+    const matchesStatus = !filters.status || user.status === filters.status;
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   if (loading) {
     return <div className="text-center py-8">Đang tải...</div>;
@@ -135,12 +144,16 @@ const UsersList = () => {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className={`p-2 rounded-full mr-3 ${
-                              user.role === 'admin' ? 'bg-purple-100' : 'bg-blue-100'
-                            }`}>
-                              <UserCog className={`h-5 w-5 ${
-                                user.role === 'admin' ? 'text-purple-600' : 'text-blue-600'
-                              }`} />
+                            <div
+                              className={`p-2 rounded-full mr-3 ${
+                                user.roles?.code === 'admin' ? 'bg-purple-100' : 'bg-blue-100'
+                              }`}
+                            >
+                              <UserCog
+                                className={`h-5 w-5 ${
+                                  user.roles?.code === 'admin' ? 'text-purple-600' : 'text-blue-600'
+                                }`}
+                              />
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
@@ -157,12 +170,12 @@ const UsersList = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              user.role === 'admin'
+                              user.roles?.code === 'admin'
                                 ? 'bg-purple-100 text-purple-800'
                                 : 'bg-blue-100 text-blue-800'
                             }`}
                           >
-                            {user.role === 'admin' ? 'Admin' : 'User'}
+                            {user.roles?.name || user.roles?.code || '—'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -245,12 +258,16 @@ const UsersList = () => {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-full ${
-                      user.role === 'admin' ? 'bg-purple-100' : 'bg-blue-100'
-                    }`}>
-                      <UserCog className={`h-6 w-6 ${
-                        user.role === 'admin' ? 'text-purple-600' : 'text-blue-600'
-                      }`} />
+                    <div
+                      className={`p-3 rounded-full ${
+                        user.roles?.code === 'admin' ? 'bg-purple-100' : 'bg-blue-100'
+                      }`}
+                    >
+                      <UserCog
+                        className={`h-6 w-6 ${
+                          user.roles?.code === 'admin' ? 'text-purple-600' : 'text-blue-600'
+                        }`}
+                      />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{user.full_name}</CardTitle>
@@ -259,12 +276,12 @@ const UsersList = () => {
                   </div>
                   <span
                     className={`text-xs px-2 py-1 rounded ${
-                      user.role === 'admin'
+                      user.roles?.code === 'admin'
                         ? 'bg-purple-100 text-purple-800'
                         : 'bg-blue-100 text-blue-800'
                     }`}
                   >
-                    {user.role === 'admin' ? 'Admin' : 'User'}
+                    {user.roles?.name || user.roles?.code || '—'}
                   </span>
                 </div>
               </CardHeader>

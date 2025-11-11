@@ -1,16 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
-import firebaseAuthService from '../services/firebaseAuth';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import supabaseAuth from '../services/supabaseAuth';
+import { fetchUserByEmail } from '../services/supabaseUsers';
+import { isSupabaseConfigured } from '../services/supabaseClient';
 
 const AuthContext = createContext();
-
-// Determine Firebase usage (mirror logic in services/api.js)
-const firebaseFlag = import.meta.env.VITE_USE_FIREBASE;
-const USE_FIREBASE = (() => {
-  if (firebaseFlag === 'true') return true;
-  if (firebaseFlag === 'false') return false;
-  return !import.meta.env.DEV;
-})();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -24,88 +17,130 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      const token = localStorage.getItem('token');
-      const userData = localStorage.getItem('user');
-      
-      if (token && userData) {
-        try {
-          if (USE_FIREBASE) {
-            // Verify token is still valid by fetching current user
-            const currentUser = await firebaseAuthService.getCurrentUser();
-            if (currentUser) {
-              setUser(currentUser);
-            } else {
-              // Token invalid, clear storage
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
-            }
-          } else {
-            setUser(JSON.parse(userData));
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          }
-        } catch (error) {
-          console.error('Auth init error:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        }
+  const hydrateUser = useCallback(
+    async (authUser) => {
+      if (!authUser?.email) {
+        localStorage.removeItem('user');
+        setUser(null);
+        return false;
       }
+
+      try {
+        const profile = await fetchUserByEmail(authUser.email);
+        localStorage.setItem('user', JSON.stringify(profile));
+        setUser(profile);
+        return true;
+      } catch (error) {
+        console.error('Không tìm thấy hồ sơ người dùng tương ứng email:', error);
+        localStorage.removeItem('user');
+        setUser(null);
+        return false;
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase chưa được cấu hình. AuthContext sẽ hoạt động ở chế độ ngoại tuyến.');
       setLoading(false);
+      return;
+    }
+
+    let subscription;
+
+    const initAuth = async () => {
+      try {
+        const cachedUser = localStorage.getItem('user');
+        if (cachedUser) {
+          setUser(JSON.parse(cachedUser));
+        }
+
+        const { data: sessionData, error } = await supabaseAuth.getSession();
+        if (error) {
+          console.error('Supabase getSession error:', error);
+        }
+        const session = sessionData?.session;
+        if (session?.user?.email) {
+          await hydrateUser(session.user);
+        }
+      } catch (err) {
+        console.error('Auth init error:', err);
+        localStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+
+      const { data } = supabaseAuth.onAuthStateChange(async (_event, session) => {
+        if (session?.user?.email) {
+          await hydrateUser(session.user);
+        } else {
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+      });
+      subscription = data.subscription;
     };
 
     initAuth();
-  }, []);
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [hydrateUser]);
 
   const login = async (identifier, password) => {
+    const email = identifier?.trim().toLowerCase();
+    if (!email) {
+      return {
+        success: false,
+        error: 'Vui lòng nhập email'
+      };
+    }
+
     try {
-      if (USE_FIREBASE) {
-        // Use Firebase authentication
-        const result = await firebaseAuthService.loginWithCredentials(identifier, password);
-        
-        if (result.success) {
-          localStorage.setItem('token', result.token);
-          localStorage.setItem('user', JSON.stringify(result.user));
-          setUser(result.user);
-          return { success: true };
-        } else {
-          return { 
-            success: false, 
-            error: result.error 
-          };
+      const { data, error } = await supabaseAuth.signInWithEmail(email, password);
+      if (error) {
+        let message = error.message || 'Đăng nhập thất bại';
+        if (error.status === 400 || message.toLowerCase().includes('invalid login credentials')) {
+          message = 'Email hoặc mật khẩu không chính xác';
         }
-      } else {
-        // Use backend API
-        const response = await api.post('/auth/login', { identifier, password });
-        const { token, user } = response.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        setUser(user);
-        return { success: true };
+        return { success: false, error: message };
       }
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.error || error.message || 'Đăng nhập thất bại' 
+
+      const sessionUser = data?.user || data?.session?.user;
+      if (!sessionUser?.email) {
+        return { success: false, error: 'Không thể xác thực người dùng. Vui lòng thử lại.' };
+      }
+
+      const hydrated = await hydrateUser(sessionUser);
+      if (!hydrated) {
+        await supabaseAuth.signOut();
+        return {
+          success: false,
+          error: 'Tài khoản chưa được cấu hình trong hệ thống. Vui lòng liên hệ quản trị viên.'
+        };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('Supabase login error:', err);
+      return {
+        success: false,
+        error: err.message || 'Đăng nhập thất bại'
       };
     }
   };
 
   const logout = async () => {
     try {
-      if (USE_FIREBASE) {
-        await firebaseAuthService.logoutUser();
-      } else {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        delete api.defaults.headers.common['Authorization'];
-      }
-      setUser(null);
+      await supabaseAuth.signOut();
     } catch (error) {
-      console.error('Logout error:', error);
-      // Force logout even if there's an error
-      localStorage.removeItem('token');
+      console.error('Supabase sign out error:', error);
+    } finally {
       localStorage.removeItem('user');
       setUser(null);
     }

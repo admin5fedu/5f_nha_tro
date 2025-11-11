@@ -1,8 +1,6 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const { getDb } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
-const { checkPermission } = require('../middleware/permissions');
 const {
   notifyUserCreated,
   notifyUserStatusChanged
@@ -127,18 +125,16 @@ const ensureSampleUsers = async (db) => {
     return;
   }
 
-  const hashedPassword = await bcrypt.hash('1', 10);
   const defaultBranchId = await ensureDefaultBranch(db);
 
   for (const user of SAMPLE_USERS) {
     try {
       await new Promise((resolve, reject) => {
         db.run(
-          `INSERT OR IGNORE INTO users (username, password, full_name, email, phone, address, role, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)` ,
+          `INSERT OR IGNORE INTO users (username, full_name, email, phone, address, role, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?)` ,
           [
             user.username,
-            hashedPassword,
             user.full_name,
             user.email,
             user.phone,
@@ -156,9 +152,9 @@ const ensureSampleUsers = async (db) => {
       if (error?.message?.includes('no such column') || error?.message?.includes('no column named')) {
         await runInsert(
           db,
-          `INSERT OR IGNORE INTO users (username, password, full_name, role)
-           VALUES (?, ?, ?, ?)` ,
-          [user.username, hashedPassword, user.full_name, user.role]
+          `INSERT OR IGNORE INTO users (username, full_name, role)
+           VALUES (?, ?, ?)` ,
+          [user.username, user.full_name, user.role]
         );
       } else {
         throw error;
@@ -276,15 +272,12 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    // Hash password
-    const plainPassword = password && password.trim() !== '' ? password : '1';
-    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    const plainPassword = password && password.trim() !== '' ? password.trim() : undefined;
 
-    // Insert user
     db.run(
-      `INSERT INTO users (username, password, full_name, email, phone, address, role, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [username, hashedPassword, full_name, email || null, phone || null, address || null, role, status],
+      `INSERT INTO users (username, full_name, email, phone, address, role, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [username, full_name, email || null, phone || null, address || null, role, status],
       async function(err) {
         if (err) {
           if (err.message.includes('UNIQUE constraint')) {
@@ -360,12 +353,7 @@ router.put('/:id', async (req, res) => {
       params.push(username);
     }
 
-    // Update password if provided
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery += ', password = ?';
-      params.push(hashedPassword);
-    }
+    const plainPassword = password && password.trim() !== '' ? password.trim() : undefined;
 
     updateQuery += ' WHERE id = ?';
     params.push(req.params.id);
@@ -402,7 +390,7 @@ router.put('/:id', async (req, res) => {
         email: email || null,
         role,
         status,
-        password,
+        password: plainPassword,
         existingEmail: existingUser.email || null
       });
 
@@ -419,60 +407,9 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Self service password update
+// Password update endpoint is deprecated because passwords are managed by Firebase Auth
 router.put('/:id/password', async (req, res) => {
-  const { current_password, new_password } = req.body;
-  const requestedId = parseInt(req.params.id, 10);
-
-  if (!Number.isInteger(requestedId)) {
-    return res.status(400).json({ error: 'Invalid user id' });
-  }
-
-  if (!new_password || new_password.trim() === '') {
-    return res.status(400).json({ error: 'New password is required' });
-  }
-
-  const isSelf = req.user && req.user.id === requestedId;
-  const isAdmin = req.user && req.user.role === 'admin';
-
-  if (!isSelf && !isAdmin) {
-    return res.status(403).json({ error: 'Không có quyền thay đổi mật khẩu người dùng này' });
-  }
-
-  const db = getDb();
-
-  db.get('SELECT password FROM users WHERE id = ?', [requestedId], async (err, userRow) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (!userRow) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const storedPassword = userRow.password;
-
-    if (isSelf || (!isSelf && !isAdmin)) {
-      if (!current_password) {
-        return res.status(400).json({ error: 'Vui lòng nhập mật khẩu hiện tại' });
-      }
-
-      const isMatch = await bcrypt.compare(current_password, storedPassword || '');
-      if (!isMatch) {
-        return res.status(401).json({ error: 'Mật khẩu hiện tại không chính xác' });
-      }
-    }
-
-    const hashedNewPassword = await bcrypt.hash(new_password, 10);
-
-    db.run('UPDATE users SET password = ? WHERE id = ?', [hashedNewPassword, requestedId], function(updateErr) {
-      if (updateErr) {
-        return res.status(500).json({ error: updateErr.message });
-      }
-
-      res.json({ message: 'Cập nhật mật khẩu thành công' });
-    });
-  });
+  return res.status(410).json({ error: 'Chức năng cập nhật mật khẩu đã được chuyển sang Firebase Authentication.' });
 });
 
 // Delete user

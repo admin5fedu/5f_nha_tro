@@ -10,7 +10,9 @@
     "build": "cd client && npm run build",
     "start": "node server/index.js",
     "seed": "node server/scripts/seed.js",
-    "migrate": "node server/scripts/migrate-users.js"
+    "migrate": "node server/scripts/migrate-users.js",
+    "migrate:remove-user-password": "node server/scripts/remove-user-password-column.js",
+    "cleanup:remove-password-fields": "node server/scripts/cleanup/remove-password-fields.js"
   },
   "keywords": [
     "nha-tro",
@@ -20,7 +22,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

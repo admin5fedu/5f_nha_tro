@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../services/api';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Label } from '../../components/ui/label';
+import { fetchBranches } from '../../services/supabaseBranches';
+import { fetchRoles } from '../../services/supabaseRoles';
+import { fetchUserById, createUser, updateUser } from '../../services/supabaseUsers';
 
 const UserForm = () => {
   const { id } = useParams();
@@ -12,43 +14,65 @@ const UserForm = () => {
   const isEditing = useMemo(() => id && id !== 'new', [id]);
   const [loading, setLoading] = useState(false);
   const [branches, setBranches] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [formData, setFormData] = useState({
     username: '',
-    password: isEditing ? '' : '1',
     full_name: '',
     email: '',
     phone: '',
     address: '',
-    role: 'user',
+    role_id: null,
     status: 'active',
     branch_ids: []
   });
 
   useEffect(() => {
     loadBranches();
+    loadRoles();
     if (isEditing) {
       loadUser();
-    } else {
-      setFormData((prev) => ({ ...prev, password: '1' }));
     }
   }, [id, isEditing]);
 
+  useEffect(() => {
+    if (!isEditing && roles.length > 0 && !formData.role_id) {
+      setFormData((prev) => ({
+        ...prev,
+        role_id: roles.find((role) => role.code === 'staff')?.id || roles[0].id
+      }));
+    }
+  }, [roles, isEditing, formData.role_id]);
+
   const loadBranches = async () => {
     try {
-      const response = await api.get('/branches');
-      setBranches(response.data);
+      const data = await fetchBranches();
+      setBranches(data);
     } catch (error) {
       console.error('Error loading branches:', error);
     }
   };
 
+  const loadRoles = async () => {
+    try {
+      const data = await fetchRoles();
+      setRoles(data);
+    } catch (error) {
+      console.error('Error loading roles:', error);
+    }
+  };
+
   const loadUser = async () => {
     try {
-      const response = await api.get(`/users/${id}`);
+      const data = await fetchUserById(id);
       setFormData({
-        ...response.data,
-        password: '', // Don't show password
-        branch_ids: response.data.branch_ids || []
+        username: data.username || '',
+        full_name: data.full_name || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        role_id: data.role_id || null,
+        status: data.status || 'active',
+        branch_ids: data.branch_ids || []
       });
     } catch (error) {
       console.error('Error loading user:', error);
@@ -71,24 +95,31 @@ const UserForm = () => {
     setLoading(true);
     try {
       const data = {
-        ...formData,
-        password: formData.password && formData.password.trim() !== ''
-          ? formData.password
-          : isEditing
-            ? undefined
-            : '1',
+        username: formData.username.trim(),
+        full_name: formData.full_name.trim(),
+        email: formData.email?.trim() || null,
+        phone: formData.phone?.trim() || null,
+        address: formData.address?.trim() || null,
+        role_id: formData.role_id || null,
+        status: formData.status,
         branch_ids: formData.branch_ids || []
       };
-      
-      if (id && id !== 'new') {
-        await api.put(`/users/${id}`, data);
+
+      if (!data.role_id) {
+        alert('Vui lòng chọn vai trò cho nhân viên');
+        setLoading(false);
+        return;
+      }
+
+      if (isEditing) {
+        await updateUser(id, data);
         navigate(`/users/${id}`);
       } else {
-        const response = await api.post('/users', data);
-        navigate(`/users/${response.data.id}`);
+        const newUser = await createUser(data);
+        navigate(`/users/${newUser.id}`);
       }
     } catch (error) {
-      alert(error.response?.data?.error || 'Lỗi khi lưu nhân viên');
+      alert(error.message || 'Lỗi khi lưu nhân viên');
     } finally {
       setLoading(false);
     }
@@ -127,20 +158,6 @@ const UserForm = () => {
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
-              </div>
-              <div>
-                <Label required={!isEditing}>Mật khẩu</Label>
-                <input
-                  type="password"
-                  required={!isEditing}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={isEditing ? 'Để trống nếu không đổi' : 'Mật khẩu mặc định sẽ là 1'}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-                {!isEditing && (
-                  <p className="mt-1 text-xs text-gray-500">Nếu để trống, mật khẩu mặc định sẽ là <span className="font-semibold">1</span>.</p>
-                )}
               </div>
               <div className="md:col-span-2">
                 <Label required>Họ và tên</Label>
@@ -182,13 +199,21 @@ const UserForm = () => {
               <div>
                 <Label required>Vai trò</Label>
                 <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  value={formData.role_id || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role_id: e.target.value ? Number(e.target.value) : null })
+                  }
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="user">User</option>
+                  <option value="" disabled>
+                    -- Chọn vai trò --
+                  </option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name || role.code}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>

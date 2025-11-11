@@ -1,84 +1,27 @@
 // Firebase Authentication Helper
 import { auth, database } from './firebase';
-import {
-  signInWithEmailAndPassword,
-  signInAnonymously,
-  signOut,
-  linkWithCredential,
-  EmailAuthProvider
-} from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
-import bcrypt from 'bcryptjs';
 
-let pendingAuthPromise = null;
-
-export const ensureFirebaseAuthSession = async () => {
-  if (auth.currentUser) {
-    return auth.currentUser;
-  }
-
-  if (!pendingAuthPromise) {
-    pendingAuthPromise = signInAnonymously(auth)
-      .catch((error) => {
-        console.error('Anonymous sign-in failed:', error);
-        throw error;
-      })
-      .finally(() => {
-        pendingAuthPromise = null;
-      });
-  }
-
-  return pendingAuthPromise;
-};
-
-/**
- * Find user by username or email
- */
-const findUserByIdentifier = async (identifier) => {
-  await ensureFirebaseAuthSession();
-
+const findUserByEmail = async (email) => {
   const usersRef = ref(database, 'users');
   const snapshot = await get(usersRef);
-  
+
   if (!snapshot.exists()) {
     return null;
   }
-  
+
   const users = snapshot.val();
-  
-  // Search for user by username or email
+
   for (const [key, user] of Object.entries(users)) {
-    if (user.username === identifier || user.email === identifier) {
+    if (user.email && user.email.toLowerCase() === email.toLowerCase()) {
       return { firebase_key: key, ...user };
     }
   }
-  
+
   return null;
 };
 
-/**
- * Verify password using bcrypt
- */
-const verifyPassword = async (plainPassword, hashedPassword) => {
-  try {
-    // For demo purposes, if password is "password", accept it
-    if (plainPassword === 'password') {
-      return true;
-    }
-    
-    // Try to verify with bcrypt
-    return await bcrypt.compare(plainPassword, hashedPassword);
-  } catch (error) {
-    console.error('Password verification error:', error);
-    return false;
-  }
-};
-
-/**
- * Login with username/email and password
- * This is a custom auth implementation since Firebase Auth requires email
- * but our system uses username as primary identifier
- */
 export const loginWithCredentials = async (identifier, password) => {
   const toError = (message) => ({
     success: false,
@@ -86,78 +29,39 @@ export const loginWithCredentials = async (identifier, password) => {
   });
 
   try {
-    // Find user in database
-    await ensureFirebaseAuthSession();
-    const user = await findUserByIdentifier(identifier);
-    
-    if (!user) {
-      return toError('Tài khoản không tồn tại');
+    const email = identifier?.trim().toLowerCase();
+    if (!email) {
+      return toError('Vui lòng nhập email');
     }
-    
-    // Check if user is active
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        return toError('Tài khoản không tồn tại');
+      }
+      if (error.code === 'auth/wrong-password') {
+        return toError('Mật khẩu không chính xác');
+      }
+      if (error.code === 'auth/invalid-email') {
+        return toError('Email không hợp lệ');
+      }
+      console.error('Firebase sign-in failed:', error);
+      return toError('Không thể xác thực người dùng. Vui lòng thử lại.');
+    }
+
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      await signOut(auth);
+      return toError('Tài khoản chưa được cấu hình trong hệ thống');
+    }
+
     if (user.status !== 'active') {
+      await signOut(auth);
       return toError('Tài khoản đã bị khóa');
     }
-    
-    // Ensure we have an authenticated Firebase user (upgrade from anonymous)
-    const email = user.email;
-    if (!email) {
-      return toError('Tài khoản chưa được cấu hình email đăng nhập');
-    }
 
-    const credential = EmailAuthProvider.credential(email, password);
-
-    if (auth.currentUser?.isAnonymous) {
-      try {
-        await linkWithCredential(auth.currentUser, credential);
-      } catch (error) {
-        if (error.code === 'auth/credential-already-in-use') {
-          try {
-            await signInWithEmailAndPassword(auth, email, password);
-          } catch (signInError) {
-            if (signInError.code === 'auth/user-not-found') {
-              return toError('Tài khoản chưa tồn tại trong hệ thống xác thực');
-            }
-            if (signInError.code === 'auth/wrong-password') {
-              return toError('Mật khẩu không chính xác');
-            }
-            console.error('Firebase sign-in failed:', signInError);
-            return toError('Không thể xác thực người dùng. Vui lòng thử lại.');
-          }
-        } else {
-          console.error('Error linking anonymous user:', error);
-          return toError('Không thể xác thực người dùng. Vui lòng thử lại.');
-        }
-      }
-    } else if (!auth.currentUser || auth.currentUser.email !== email) {
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        if (error.code === 'auth/user-not-found') {
-          return toError('Tài khoản chưa tồn tại trong hệ thống xác thực');
-    }
-        if (error.code === 'auth/wrong-password') {
-          return toError('Mật khẩu không chính xác');
-        }
-        console.error('Firebase email/password sign-in failed:', error);
-        return toError('Không thể xác thực người dùng. Vui lòng thử lại.');
-      }
-    }
-
-    // Verify password against local hash
-    const isPasswordValid = await verifyPassword(password, user.password);
-    if (!isPasswordValid) {
-      return toError('Mật khẩu không chính xác');
-    }
-    
-    // Create a mock token (in real app, you'd use Firebase Custom Tokens)
-    const token = btoa(JSON.stringify({ 
-      userId: user.id, 
-      username: user.username,
-      timestamp: Date.now() 
-    }));
-    
-    // Persist role mapping for security rules (role lookup by UID)
     try {
       if (auth.currentUser?.uid) {
         await set(ref(database, `user_roles/${auth.currentUser.uid}`), {
@@ -171,10 +75,15 @@ export const loginWithCredentials = async (identifier, password) => {
     } catch (syncError) {
       console.warn('Không thể đồng bộ quyền người dùng:', syncError);
     }
-    
-    // Remove sensitive data
-    const { password: _, firebase_key, ...userData } = user;
-    
+
+    const token = btoa(JSON.stringify({
+      userId: user.id,
+      username: user.username,
+      timestamp: Date.now()
+    }));
+
+    const { firebase_key, ...userData } = user;
+
     return {
       success: true,
       token,
@@ -182,7 +91,10 @@ export const loginWithCredentials = async (identifier, password) => {
     };
   } catch (error) {
     console.error('Đăng nhập thất bại:', error);
-    return toError('Đăng nhập thất bại');
+    return {
+      success: false,
+      error: 'Đăng nhập thất bại'
+    };
   }
 };
 
@@ -220,8 +132,6 @@ export const getCurrentUser = async () => {
     if (!token) {
       return null;
     }
-
-    await ensureFirebaseAuthSession();
     
     // Decode token to get user info
     const decoded = JSON.parse(atob(token));
@@ -233,16 +143,16 @@ export const getCurrentUser = async () => {
     if (!snapshot.exists()) {
       return null;
     }
-    
+
     const users = snapshot.val();
-    
-    for (const [key, user] of Object.entries(users)) {
+
+    for (const [, user] of Object.entries(users)) {
       if (user.id === decoded.userId) {
-        const { password, firebase_key, ...userData } = user;
+        const { firebase_key, ...userData } = user;
         return userData;
       }
     }
-    
+
     return null;
   } catch (error) {
     console.error('Get current user error:', error);

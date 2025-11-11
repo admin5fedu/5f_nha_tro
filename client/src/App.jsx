@@ -61,6 +61,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { SettingsProvider } from './context/SettingsContext';
+import SupabaseTodos from './pages/integrations/SupabaseTodos';
 import './App.css';
 
 function App() {
@@ -153,6 +154,7 @@ function App() {
               <Route path="meter-readings/new" element={<MeterReadingForm />} />
               <Route path="meter-readings/:id" element={<MeterReadingDetail />} />
               <Route path="meter-readings/:id/edit" element={<MeterReadingForm />} />
+              <Route path="integrations/supabase/todos" element={<SupabaseTodos />} />
             </Route>
           </Routes>
         </Router>
