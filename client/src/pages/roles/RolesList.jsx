@@ -10,19 +10,20 @@ const RolesList = () => {
   const navigate = useNavigate();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const canView = hasPermission('roles', 'view');
   const canCreate = hasPermission('roles', 'create');
   const canUpdate = hasPermission('roles', 'update');
   const canDelete = hasPermission('roles', 'delete');
 
   useEffect(() => {
-    if (canView) {
-      loadRoles();
-    } else {
+    if (permLoading) return;
+    if (!hasPermission('roles', 'view')) {
       setLoading(false);
+      return;
     }
-  }, [canView]);
+    loadRoles();
+  }, [permLoading, hasPermission]);
 
   const loadRoles = async () => {
     try {
@@ -50,7 +51,7 @@ const RolesList = () => {
     }
   };
 
-  if (loading) {
+  if (loading || permLoading) {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 

@@ -11,18 +11,19 @@ const RoomDetail = () => {
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const canView = hasPermission('rooms', 'view');
   const canUpdate = hasPermission('rooms', 'update');
   const canDelete = hasPermission('rooms', 'delete');
 
   useEffect(() => {
-    if (canView) {
-      loadRoom();
-    } else {
+    if (permLoading) return;
+    if (!hasPermission('rooms', 'view')) {
       setLoading(false);
+      return;
     }
-  }, [id, canView]);
+    loadRoom();
+  }, [id, permLoading, hasPermission]);
 
   const loadRoom = async () => {
     try {
@@ -56,7 +57,7 @@ const RoomDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading || permLoading) {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 

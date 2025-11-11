@@ -19,20 +19,21 @@ const RoomsList = () => {
   const pageSize = 25;
   const [filters, setFilters] = useState({});
   const navigate = useNavigate();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const canView = hasPermission('rooms', 'view');
   const canCreate = hasPermission('rooms', 'create');
   const canUpdate = hasPermission('rooms', 'update');
   const canDelete = hasPermission('rooms', 'delete');
 
   useEffect(() => {
-    if (canView) {
-      loadBranches();
-      loadRooms();
-    } else {
+    if (permLoading) return;
+    if (!hasPermission('rooms', 'view')) {
       setLoading(false);
+      return;
     }
-  }, [canView]);
+    loadBranches();
+    loadRooms();
+  }, [permLoading, hasPermission]);
 
   const loadBranches = async () => {
     try {
@@ -125,7 +126,7 @@ const RoomsList = () => {
     }
   ];
 
-  if (loading) {
+  if (loading || permLoading) {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 

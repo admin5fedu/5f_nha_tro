@@ -14,19 +14,20 @@ const BranchDetail = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [roomsLoading, setRoomsLoading] = useState(true);
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const canView = hasPermission('branches', 'view');
   const canUpdate = hasPermission('branches', 'update');
   const canDelete = hasPermission('branches', 'delete');
 
   useEffect(() => {
-    if (canView) {
-      loadBranch();
-      loadRooms();
-    } else {
+    if (permLoading) return;
+    if (!hasPermission('branches', 'view')) {
       setLoading(false);
+      return;
     }
-  }, [id, canView]);
+    loadBranch();
+    loadRooms();
+  }, [id, permLoading, hasPermission]);
 
   const loadBranch = async () => {
     try {
@@ -71,7 +72,7 @@ const BranchDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading || permLoading) {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 

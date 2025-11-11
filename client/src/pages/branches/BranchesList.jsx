@@ -17,19 +17,20 @@ const BranchesList = () => {
   const pageSize = 25;
   const [filters, setFilters] = useState({});
   const navigate = useNavigate();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const canView = hasPermission('branches', 'view');
   const canCreate = hasPermission('branches', 'create');
   const canUpdate = hasPermission('branches', 'update');
   const canDelete = hasPermission('branches', 'delete');
 
   useEffect(() => {
-    if (canView) {
-      loadBranches();
-    } else {
+    if (permLoading) return;
+    if (!hasPermission('branches', 'view')) {
       setLoading(false);
+      return;
     }
-  }, [canView]);
+    loadBranches();
+  }, [permLoading, hasPermission]);
 
   const loadBranches = async (pageToLoad = 0, append = false) => {
     if (append) {
@@ -99,7 +100,7 @@ const BranchesList = () => {
     }
   ];
 
-  if (loading) {
+  if (loading || permLoading) {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 

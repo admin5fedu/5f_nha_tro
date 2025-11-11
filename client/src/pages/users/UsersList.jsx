@@ -17,14 +17,19 @@ const UsersList = () => {
   const pageSize = 25;
   const [filters, setFilters] = useState({});
   const navigate = useNavigate();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permLoading } = usePermissions();
   const canCreate = hasPermission('users', 'create');
   const canUpdate = hasPermission('users', 'update');
   const canDelete = hasPermission('users', 'delete');
 
   useEffect(() => {
+    if (permLoading) return;
+    if (!hasPermission('users', 'view')) {
+      setLoading(false);
+      return;
+    }
     loadUsers();
-  }, []);
+  }, [permLoading, hasPermission]);
 
   const loadUsers = async (pageToLoad = 0, append = false) => {
     if (append) {
@@ -108,8 +113,18 @@ const UsersList = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  if (loading) {
+  if (loading || permLoading) {
     return <div className="text-center py-8">Đang tải...</div>;
+  }
+
+  if (!hasPermission('users', 'view')) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-gray-600">
+          Bạn không có quyền xem danh sách nhân viên.
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
