@@ -5,7 +5,7 @@ const {
   notifyUserCreated,
   notifyUserStatusChanged
 } = require('../utils/notificationEvents');
-const { syncFirebaseAuthUser } = require('../utils/firebaseAuthSync');
+const { ensureSupabaseAuthUser } = require('../utils/supabaseAuthUser');
 const router = express.Router();
 
 router.use(authenticateToken);
@@ -272,8 +272,6 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const plainPassword = password && password.trim() !== '' ? password.trim() : undefined;
-
     db.run(
       `INSERT INTO users (username, full_name, email, phone, address, role, status)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -297,15 +295,20 @@ router.post('/', async (req, res) => {
           stmt.finalize();
         }
 
-        await syncFirebaseAuthUser({
-          userId,
-          fullName: full_name,
-          email: email || null,
-          role,
-          status,
-          password: plainPassword,
-          existingEmail: null
-        });
+        if (email) {
+          try {
+            await ensureSupabaseAuthUser({
+              email,
+              fullName: full_name,
+              password
+            });
+          } catch (authError) {
+            console.error('Supabase auth sync failed when creating user:', authError);
+            return res.status(500).json({
+              error: 'Tạo tài khoản Supabase Auth thất bại. Vui lòng kiểm tra cấu hình SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY.'
+            });
+          }
+        }
 
         res.json({ id: userId, ...req.body, password: undefined });
 
@@ -353,8 +356,6 @@ router.put('/:id', async (req, res) => {
       params.push(username);
     }
 
-    const plainPassword = password && password.trim() !== '' ? password.trim() : undefined;
-
     updateQuery += ' WHERE id = ?';
     params.push(req.params.id);
 
@@ -384,15 +385,25 @@ router.put('/:id', async (req, res) => {
         });
       }
 
-      await syncFirebaseAuthUser({
-        userId: req.params.id,
-        fullName: full_name,
-        email: email || null,
-        role,
-        status,
-        password: plainPassword,
-        existingEmail: existingUser.email || null
-      });
+      const trimmedPassword = password && password.trim() !== '' ? password.trim() : undefined;
+      const targetEmail = email || existingUser.email;
+      const emailChanged = email && email !== existingUser.email;
+      const shouldSyncAuth = targetEmail && (emailChanged || !!trimmedPassword);
+
+      if (shouldSyncAuth) {
+        try {
+          await ensureSupabaseAuthUser({
+            email: targetEmail,
+            fullName: full_name,
+            password: trimmedPassword
+          });
+        } catch (authError) {
+          console.error('Supabase auth sync failed when updating user:', authError);
+          return res.status(500).json({
+            error: 'Cập nhật tài khoản Supabase Auth thất bại. Vui lòng kiểm tra cấu hình SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY.'
+          });
+        }
+      }
 
       res.json({ message: 'User updated successfully' });
 

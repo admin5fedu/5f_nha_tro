@@ -220,34 +220,38 @@ const getDashboardStats = () => {
   const tenants = collections.tenants || [];
   const revenue = (collections.contracts || []).reduce((total, contract) => total + (contract.monthly_rent || 0), 0);
   return {
-    total_rooms: rooms.length,
-    occupied_rooms: occupiedRooms,
-    available_rooms: availableRooms,
-    active_tenants: tenants.length,
-    monthly_revenue: revenue,
-    unpaid_invoices: 2,
-    maintenance_requests: 1
+    totalBranches: (collections.branches || []).length,
+    totalRooms: rooms.length,
+    availableRooms,
+    occupiedRooms,
+    totalTenants: tenants.length,
+    activeContracts: (collections.contracts || []).length,
+    monthlyRevenue: revenue,
+    totalRevenue: revenue * 12
   };
 };
 
 const getDashboardRecent = () => ({
-  recentContracts: collections.contracts.slice(-5),
-  recentPayments: [
+  contracts: (collections.contracts || []).slice(-5).map((contract) => ({
+    id: contract.id,
+    tenant_name:
+      ((collections.tenants || []).find((tenant) => tenant.id === contract.tenant_id) || {}).full_name || 'Khách thuê',
+    room_number:
+      ((collections.rooms || []).find((room) => room.id === contract.room_id) || {}).room_number || 'N/A',
+    branch_name:
+      ((collections.branches || []).find((branch) => branch.id === contract.branch_id) || {}).name || 'Chi nhánh',
+    start_date: contract.start_date,
+    status: contract.status
+  })),
+  payments: [
     {
       id: 1,
       tenant_name: 'Nguyễn Văn A',
+      room_number: '101',
       amount: 1500000,
       payment_date: '2025-01-05',
       method: 'transfer',
-      created_at: now()
-    }
-  ],
-  maintenanceTickets: [
-    {
-      id: 1,
-      room_number: '102',
-      issue: 'Máy lạnh hỏng',
-      status: 'pending',
+      status: 'paid',
       created_at: now()
     }
   ]

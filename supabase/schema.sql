@@ -11,8 +11,12 @@ create table if not exists public.roles (
   code          text not null unique,
   name          text not null,
   description   text,
+  status        text default 'active',
   created_at    timestamptz not null default now()
 );
+
+alter table public.roles
+  add column if not exists status text default 'active';
 
 create table if not exists public.users (
   id             bigserial primary key,
@@ -26,6 +30,52 @@ create table if not exists public.users (
   status         text not null default 'active',
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
+);
+
+create table if not exists public.settings (
+  id                               bigint primary key default 1,
+  app_name                         text,
+  app_logo                         text,
+  company_name                     text,
+  company_address                  text,
+  company_phone                    text,
+  company_email                    text,
+  company_website                  text,
+  company_tax_code                 text,
+  company_representative           text,
+  company_representative_position  text,
+  company_bank_account             text,
+  company_bank_name                text,
+  company_bank_branch              text,
+  notes                            text,
+  created_at                       timestamptz default now(),
+  updated_at                       timestamptz default now()
+);
+
+create table if not exists public.permission_modules (
+  id            bigserial primary key,
+  module_code   text not null unique,
+  module_name   text not null,
+  group_label   text,
+  created_at    timestamptz default now()
+);
+
+create table if not exists public.permission_actions (
+  id             bigserial primary key,
+  module_id      bigint not null references public.permission_modules(id) on delete cascade,
+  action         text not null,
+  action_label   text not null,
+  sort_order     integer default 0,
+  created_at     timestamptz default now(),
+  unique (module_id, action)
+);
+
+create table if not exists public.role_permissions (
+  id                    bigserial primary key,
+  role_id               bigint not null references public.roles(id) on delete cascade,
+  permission_action_id  bigint not null references public.permission_actions(id) on delete cascade,
+  created_at            timestamptz default now(),
+  unique (role_id, permission_action_id)
 );
 
 create table if not exists public.branches (
@@ -334,6 +384,9 @@ create index if not exists idx_tasks_branch on public.tasks (branch_id);
 create index if not exists idx_tasks_room on public.tasks (room_id);
 create index if not exists idx_tasks_status on public.tasks (status);
 create index if not exists idx_tasks_priority on public.tasks (priority);
+create index if not exists idx_permission_actions_module on public.permission_actions (module_id);
+create index if not exists idx_role_permissions_role on public.role_permissions (role_id);
+create index if not exists idx_role_permissions_permission on public.role_permissions (permission_action_id);
 
 -- === Optional helper seed ==================================================
 
@@ -345,5 +398,72 @@ values
   ('staff', 'Nhân viên', 'Nhân viên vận hành'),
   ('office_staff', 'Nhân viên văn phòng', 'Xử lý hợp đồng và khách thuê')
 on conflict (code) do nothing;
+
+insert into public.settings (id, app_name, created_at, updated_at)
+values (1, 'Nhà Trọ', now(), now())
+on conflict (id) do nothing;
+
+insert into public.permission_modules (module_code, module_name, group_label)
+values
+  ('dashboard', 'Dashboard', 'Tổng quan'),
+  ('branches', 'Chi nhánh', 'Chi nhánh & Phòng'),
+  ('rooms', 'Phòng', 'Chi nhánh & Phòng'),
+  ('assets', 'Tài sản', 'Chi nhánh & Phòng'),
+  ('images', 'Hình ảnh', 'Chi nhánh & Phòng'),
+  ('services', 'Dịch vụ', 'Chi nhánh & Phòng'),
+  ('meter-readings', 'Ghi chỉ số', 'Chi nhánh & Phòng'),
+  ('tenants', 'Khách thuê', 'Khách thuê'),
+  ('vehicles', 'Phương tiện', 'Khách thuê'),
+  ('tasks', 'Công việc', 'Công việc'),
+  ('contracts', 'Hợp đồng', 'Tài chính'),
+  ('invoices', 'Hóa đơn', 'Tài chính'),
+  ('accounts', 'Tài khoản', 'Tài chính'),
+  ('transactions', 'Giao dịch', 'Tài chính'),
+  ('financial-categories', 'Danh mục tài chính', 'Tài chính'),
+  ('profit-loss', 'Lãi lỗ', 'Báo cáo'),
+  ('accounts-receivable', 'Công nợ', 'Báo cáo'),
+  ('revenue', 'Doanh thu', 'Báo cáo'),
+  ('cashflow', 'Dòng tiền', 'Báo cáo'),
+  ('settings', 'Thiết lập', 'Thiết lập'),
+  ('users', 'Người dùng', 'Thiết lập'),
+  ('roles', 'Vai trò', 'Thiết lập'),
+  ('permissions', 'Phân quyền', 'Thiết lập')
+on conflict (module_code) do update set module_name = excluded.module_name, group_label = excluded.group_label;
+
+with action_defs as (
+  select *
+  from (values
+    ('dashboard', 'view', 'Xem', 1),
+    ('branches', 'view', 'Xem', 1), ('branches', 'create', 'Thêm', 2), ('branches', 'update', 'Sửa', 3), ('branches', 'delete', 'Xóa', 4),
+    ('rooms', 'view', 'Xem', 1), ('rooms', 'create', 'Thêm', 2), ('rooms', 'update', 'Sửa', 3), ('rooms', 'delete', 'Xóa', 4),
+    ('assets', 'view', 'Xem', 1), ('assets', 'create', 'Thêm', 2), ('assets', 'update', 'Sửa', 3), ('assets', 'delete', 'Xóa', 4),
+    ('images', 'view', 'Xem', 1), ('images', 'create', 'Thêm', 2), ('images', 'update', 'Sửa', 3), ('images', 'delete', 'Xóa', 4),
+    ('services', 'view', 'Xem', 1), ('services', 'create', 'Thêm', 2), ('services', 'update', 'Sửa', 3), ('services', 'delete', 'Xóa', 4),
+    ('meter-readings', 'view', 'Xem', 1), ('meter-readings', 'create', 'Thêm', 2), ('meter-readings', 'update', 'Sửa', 3), ('meter-readings', 'delete', 'Xóa', 4),
+    ('tenants', 'view', 'Xem', 1), ('tenants', 'create', 'Thêm', 2), ('tenants', 'update', 'Sửa', 3), ('tenants', 'delete', 'Xóa', 4),
+    ('vehicles', 'view', 'Xem', 1), ('vehicles', 'create', 'Thêm', 2), ('vehicles', 'update', 'Sửa', 3), ('vehicles', 'delete', 'Xóa', 4),
+    ('tasks', 'view', 'Xem', 1), ('tasks', 'create', 'Thêm', 2), ('tasks', 'update', 'Sửa', 3), ('tasks', 'delete', 'Xóa', 4),
+    ('contracts', 'view', 'Xem', 1), ('contracts', 'create', 'Thêm', 2), ('contracts', 'update', 'Sửa', 3), ('contracts', 'delete', 'Xóa', 4),
+    ('invoices', 'view', 'Xem', 1), ('invoices', 'create', 'Thêm', 2), ('invoices', 'update', 'Sửa', 3), ('invoices', 'delete', 'Xóa', 4),
+    ('accounts', 'view', 'Xem', 1), ('accounts', 'create', 'Thêm', 2), ('accounts', 'update', 'Sửa', 3), ('accounts', 'delete', 'Xóa', 4),
+    ('transactions', 'view', 'Xem', 1), ('transactions', 'create', 'Thêm', 2), ('transactions', 'update', 'Sửa', 3), ('transactions', 'delete', 'Xóa', 4),
+    ('financial-categories', 'view', 'Xem', 1), ('financial-categories', 'create', 'Thêm', 2), ('financial-categories', 'update', 'Sửa', 3), ('financial-categories', 'delete', 'Xóa', 4),
+    ('profit-loss', 'view', 'Xem', 1),
+    ('accounts-receivable', 'view', 'Xem', 1),
+    ('revenue', 'view', 'Xem', 1),
+    ('cashflow', 'view', 'Xem', 1),
+    ('settings', 'view', 'Xem', 1), ('settings', 'update', 'Sửa', 2),
+    ('users', 'view', 'Xem', 1), ('users', 'create', 'Thêm', 2), ('users', 'update', 'Sửa', 3), ('users', 'delete', 'Xóa', 4),
+    ('roles', 'view', 'Xem', 1), ('roles', 'create', 'Thêm', 2), ('roles', 'update', 'Sửa', 3), ('roles', 'delete', 'Xóa', 4),
+    ('permissions', 'view', 'Xem', 1), ('permissions', 'update', 'Sửa', 2)
+  ) as vals(module_code, action, action_label, sort_order)
+)
+insert into public.permission_actions (module_id, action, action_label, sort_order)
+select pm.id, vals.action, vals.action_label, vals.sort_order
+from public.permission_modules pm
+join action_defs vals on pm.module_code = vals.module_code
+on conflict (module_id, action) do update
+set action_label = excluded.action_label,
+    sort_order = excluded.sort_order;
 
 

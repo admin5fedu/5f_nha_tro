@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePermissions } from '../../context/PermissionContext';
 import { ArrowLeft, Edit, Trash2, UserCog, Mail, Phone, MapPin, Building2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -10,6 +11,7 @@ const UserDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const { hasPermission } = usePermissions();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,6 +33,10 @@ const UserDetail = () => {
   };
 
   const handleDelete = async () => {
+    if (!hasPermission('users', 'delete')) {
+      alert('Bạn không có quyền xóa nhân viên');
+      return;
+    }
     if (!confirm('Bạn có chắc muốn xóa nhân viên này?')) return;
     try {
       await deleteUserSupabase(id);
@@ -41,6 +47,8 @@ const UserDetail = () => {
   };
 
   const isSelf = currentUser && String(currentUser.id) === String(id);
+  const canUpdate = hasPermission('users', 'update');
+  const canDelete = hasPermission('users', 'delete');
 
   if (loading) {
     return <div className="text-center py-8">Đang tải...</div>;
@@ -64,14 +72,18 @@ const UserDetail = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => navigate(`/users/${id}/edit`)}>
-              <Edit size={16} className="mr-2" />
-              Sửa
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 size={16} className="mr-2" />
-              Xóa
-            </Button>
+            {canUpdate && (
+              <Button onClick={() => navigate(`/users/${id}/edit`)}>
+                <Edit size={16} className="mr-2" />
+                Sửa
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 size={16} className="mr-2" />
+                Xóa
+              </Button>
+            )}
           </div>
         </div>
       </div>

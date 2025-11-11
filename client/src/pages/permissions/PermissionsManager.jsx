@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState, Fragment } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../services/api';
 import { Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import {
+  fetchPermissionModules,
+  fetchRolePermissions as fetchRolePermissionsSupabase,
+  updateRolePermissions as updateRolePermissionsSupabase
+} from '../../services/supabasePermissions';
+import { fetchRoles } from '../../services/supabaseRoles';
+import { usePermissions } from '../../context/PermissionContext';
 
 const CORE_ACTIONS = [
   { key: 'view', label: 'Xem' },
@@ -67,7 +73,7 @@ const groupModulesBySidebar = (modules) => {
   const ungrouped = [];
 
   modules.forEach((module) => {
-    const groupLabel = getModuleGroup(module.module_code);
+    const groupLabel = module.group_label || getModuleGroup(module.module_code);
     if (groupLabel === 'Khác') {
       ungrouped.push(module);
     } else {
@@ -96,6 +102,7 @@ const groupModulesBySidebar = (modules) => {
 const PermissionsManager = () => {
   const { roleId: routeRoleId } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
 
   const [roles, setRoles] = useState([]);
   const [modulesCatalog, setModulesCatalog] = useState([]);
@@ -106,6 +113,7 @@ const PermissionsManager = () => {
   const [modulesLoading, setModulesLoading] = useState(true);
   const [loadingRolePermissions, setLoadingRolePermissions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const canModify = hasPermission('permissions', 'update');
 
   useEffect(() => {
     loadModulesCatalog();
@@ -130,8 +138,8 @@ const PermissionsManager = () => {
   const loadModulesCatalog = async () => {
     setModulesLoading(true);
     try {
-      const response = await api.get('/permissions/modules');
-      setModulesCatalog(response.data || []);
+      const modules = await fetchPermissionModules();
+      setModulesCatalog(modules);
     } catch (error) {
       console.error('Error loading module catalog:', error);
       alert('Lỗi khi tải danh sách module phân quyền');
@@ -143,8 +151,7 @@ const PermissionsManager = () => {
   const loadRoles = async () => {
     setRolesLoading(true);
     try {
-      const response = await api.get('/roles');
-      const data = response.data || [];
+      const data = await fetchRoles();
       setRoles(data);
       setSelectedRoleId((prev) => {
         if (prev) return prev;
@@ -165,8 +172,7 @@ const PermissionsManager = () => {
     setPermissions([]);
     setSelectedPermissions([]);
     try {
-      const response = await api.get(`/permissions/role/${roleId}`);
-      const rolePermissions = response.data || [];
+      const rolePermissions = await fetchRolePermissionsSupabase(roleId);
       setPermissions(rolePermissions);
       const selectedIds = [];
       rolePermissions.forEach((module) => {
@@ -226,6 +232,8 @@ const PermissionsManager = () => {
         const moduleDefinition = modulesDefinitionMap[moduleCode];
         const roleModule = roleModuleMap[moduleCode];
         const moduleName = moduleDefinition?.module_name || roleModule?.module_name || humanizeModuleName(moduleCode);
+        const moduleGroupLabel =
+          moduleDefinition?.group_label || roleModule?.group_label || getModuleGroup(moduleCode);
 
         const actions = CORE_ACTIONS.map((action) => {
           const rolePermission = roleModule?.permissions?.find((perm) => perm.action === action.key);
@@ -251,6 +259,7 @@ const PermissionsManager = () => {
         return {
           module_code: moduleCode,
           module_name: moduleName,
+          group_label: moduleGroupLabel,
           actions,
           availableCount: availableActions.length,
           selectedCount,
@@ -264,17 +273,17 @@ const PermissionsManager = () => {
     return groupModulesBySidebar(modulesForTable);
   }, [modulesForTable]);
 
-  const updateRolePermissions = async (nextSelected) => {
+  const applyRolePermissionsUpdate = async (nextSelected, { silent = false } = {}) => {
     if (!selectedRoleId) return;
     setSaving(true);
     try {
-      await api.put(`/permissions/role/${selectedRoleId}`, {
-        permission_ids: nextSelected,
-      });
+      await updateRolePermissionsSupabase(selectedRoleId, nextSelected);
       setSelectedPermissions(nextSelected);
     } catch (error) {
       console.error('Error saving permissions:', error);
-      alert(error.response?.data?.error || 'Lỗi khi cập nhật phân quyền');
+      if (!silent) {
+        alert(error.message || 'Lỗi khi cập nhật phân quyền');
+      }
       fetchRolePermissions(selectedRoleId);
     } finally {
       setSaving(false);
@@ -282,15 +291,15 @@ const PermissionsManager = () => {
   };
 
   const handlePermissionToggle = async (permissionId) => {
-    if (!permissionId || saving) return;
+    if (!permissionId || saving || !canModify) return;
     const nextSelected = selectedPermissions.includes(permissionId)
       ? selectedPermissions.filter((id) => id !== permissionId)
       : [...selectedPermissions, permissionId];
-    await updateRolePermissions(nextSelected);
+    await applyRolePermissionsUpdate(nextSelected, { silent: true });
   };
 
   const handleModuleToggle = async (moduleCode) => {
-    if (saving) return;
+    if (saving || !canModify) return;
     const moduleRow = modulesForTable.find((module) => module.module_code === moduleCode);
     if (!moduleRow) return;
     const targetIds = moduleRow.actions
@@ -302,10 +311,11 @@ const PermissionsManager = () => {
     const nextSelected = allSelected
       ? selectedPermissions.filter((id) => !targetIds.includes(id))
       : Array.from(new Set([...selectedPermissions, ...targetIds]));
-    await updateRolePermissions(nextSelected);
+    await applyRolePermissionsUpdate(nextSelected, { silent: true });
   };
 
   const handleSelectAll = () => {
+    if (!canModify) return;
     const allIds = modulesForTable
       .flatMap((module) => module.actions)
       .filter((action) => action.available)
@@ -314,6 +324,7 @@ const PermissionsManager = () => {
   };
 
   const handleDeselectAll = () => {
+    if (!canModify) return;
     setSelectedPermissions([]);
   };
 
@@ -323,16 +334,19 @@ const PermissionsManager = () => {
       return;
     }
 
+    if (!canModify) {
+      alert('Bạn không có quyền cập nhật phân quyền');
+      return;
+    }
+
     setSaving(true);
     try {
-      await api.put(`/permissions/role/${selectedRoleId}`, {
-        permission_ids: selectedPermissions,
-      });
+      await updateRolePermissionsSupabase(selectedRoleId, selectedPermissions);
       alert('Phân quyền đã được cập nhật thành công');
       fetchRolePermissions(selectedRoleId);
     } catch (error) {
       console.error('Error saving permissions:', error);
-      alert(error.response?.data?.error || 'Lỗi khi lưu phân quyền');
+      alert(error.message || 'Lỗi khi lưu phân quyền');
     } finally {
       setSaving(false);
     }
@@ -423,6 +437,9 @@ const PermissionsManager = () => {
               <Card>
               <CardHeader>
                   <CardTitle>Ma trận phân quyền</CardTitle>
+                  {!canModify && (
+                    <CardDescription>Bạn chỉ có quyền xem phân quyền. Liên hệ quản trị viên để chỉnh sửa.</CardDescription>
+                  )}
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto max-h-[70vh]">
@@ -461,7 +478,7 @@ const PermissionsManager = () => {
                                       variant="ghost"
                     size="sm"
                     onClick={() => handleModuleToggle(module.module_code)}
-                                      disabled={module.availableCount === 0 || saving}
+                                      disabled={!canModify || module.availableCount === 0 || saving}
                                       className="text-xs text-blue-600 hover:text-blue-800"
                                     >
                                       {module.allSelected ? 'Bỏ chọn' : 'Chọn tất cả'}
@@ -474,7 +491,7 @@ const PermissionsManager = () => {
                                       <button
                                         type="button"
                                         onClick={() => handlePermissionToggle(action.permissionId)}
-                                        disabled={saving}
+                                        disabled={saving || !canModify}
                                         className={`h-5 w-5 inline-flex items-center justify-center rounded border transition-colors ${
                                           action.isSelected
                                             ? 'border-blue-500 bg-blue-500 text-white'

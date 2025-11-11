@@ -61,6 +61,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { PermissionProvider } from './context/PermissionContext';
 import SupabaseTodos from './pages/integrations/SupabaseTodos';
 import './App.css';
 
@@ -68,7 +69,8 @@ function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-      <NotificationProvider>
+        <PermissionProvider>
+          <NotificationProvider>
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -158,7 +160,8 @@ function App() {
             </Route>
           </Routes>
         </Router>
-      </NotificationProvider>
+          </NotificationProvider>
+        </PermissionProvider>
       </SettingsProvider>
     </AuthProvider>
   );

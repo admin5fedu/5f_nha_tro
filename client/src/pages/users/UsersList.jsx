@@ -6,12 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import FilterPanel from '../../components/FilterPanel';
 import { objectContainsTerm } from '../../utils/search';
 import { fetchUsers, deleteUser as deleteUserSupabase } from '../../services/supabaseUsers';
+import { usePermissions } from '../../context/PermissionContext';
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({});
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('users', 'create');
+  const canUpdate = hasPermission('users', 'update');
+  const canDelete = hasPermission('users', 'delete');
 
   useEffect(() => {
     loadUsers();
@@ -30,6 +35,10 @@ const UsersList = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      alert('Bạn không có quyền xóa nhân viên');
+      return;
+    }
     if (!confirm('Bạn có chắc muốn xóa nhân viên này?')) return;
     try {
       await deleteUserSupabase(id);
@@ -91,10 +100,12 @@ const UsersList = () => {
           initialFilters={filters}
           searchPlaceholder="Tìm nhân viên, username, email, số điện thoại..."
         />
-        <Button onClick={() => navigate('/users/new')} className="flex items-center gap-2">
-          <Plus size={16} />
-          Thêm
-        </Button>
+        {canCreate && (
+          <Button onClick={() => navigate('/users/new')} className="flex items-center gap-2">
+            <Plus size={16} />
+            Thêm
+          </Button>
+        )}
       </div>
 
       {/* Desktop: Table View */}
@@ -211,24 +222,28 @@ const UsersList = () => {
                           className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 bg-white sticky right-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/users/${user.id}/edit`)}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(user.id);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                          {canUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/users/${user.id}/edit`)}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(user.id);
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))

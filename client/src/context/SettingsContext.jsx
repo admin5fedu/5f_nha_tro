@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import api from '../services/api';
+import { fetchSettings as fetchSettingsSupabase, upsertSettings as upsertSettingsSupabase } from '../services/supabaseSettings';
 
 const SettingsContext = createContext({
   settings: null,
@@ -84,8 +84,8 @@ export const SettingsProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/settings');
-      const data = normalizeSettings(response.data);
+      const response = await fetchSettingsSupabase();
+      const data = normalizeSettings(response || {});
       setSettings(data);
       persistSettingsCache(data);
     } catch (err) {
@@ -138,10 +138,19 @@ export const SettingsProvider = ({ children }) => {
       loading,
       error,
       refresh: fetchSettings,
-      updateSettings: (newSettings) => {
-        const normalized = normalizeSettings(newSettings);
-        setSettings(normalized);
-        persistSettingsCache(normalized);
+      updateSettings: async (newSettings) => {
+        try {
+          setError(null);
+          const saved = await upsertSettingsSupabase({ ...settings, ...newSettings });
+          const normalized = normalizeSettings(saved || newSettings);
+          setSettings(normalized);
+          persistSettingsCache(normalized);
+          return normalized;
+        } catch (err) {
+          console.error('Failed to update app settings:', err);
+          setError(err);
+          throw err;
+        }
       }
     }),
     [settings, loading, error, fetchSettings]

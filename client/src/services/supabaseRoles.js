@@ -11,10 +11,24 @@ export const fetchRoles = async () => {
   const supabase = ensureClient();
   const { data, error } = await supabase
     .from('roles')
-    .select('id, code, name')
+    .select('id, code, name, status')
     .order('code', { ascending: true });
 
-  if (error) throw error;
-  return data || [];
+  if (error) {
+    if (error.message?.includes('status')) {
+      const { data: fallback, error: fallbackError } = await supabase
+        .from('roles')
+        .select('id, code, name')
+        .order('code', { ascending: true });
+      if (fallbackError) throw fallbackError;
+      return (fallback || []).map((role) => ({ ...role, status: 'active' }));
+    }
+    throw error;
+  }
+
+  return (data || []).map((role) => ({
+    ...role,
+    status: role.status || 'active'
+  }));
 };
 

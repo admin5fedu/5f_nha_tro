@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
 import { ArrowLeft, Upload } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -61,17 +60,12 @@ const SettingsForm = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await api.post('/settings', formData);
-      const savedSettings = {
-        ...formData,
-        ...(response?.data || {})
-      };
-      delete savedSettings.message;
-      updateSettings(savedSettings);
+      await updateSettings(formData);
+      await refresh();
       alert('Lưu thiết lập thành công');
       navigate('/settings');
     } catch (error) {
-      alert(error.response?.data?.error || 'Lỗi khi lưu thiết lập');
+      alert(error?.message || 'Lỗi khi lưu thiết lập');
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,7 @@ import { Label } from '../../components/ui/label';
 import { fetchBranches } from '../../services/supabaseBranches';
 import { fetchRoles } from '../../services/supabaseRoles';
 import { fetchUserById, createUser, updateUser } from '../../services/supabaseUsers';
+import { usePermissions } from '../../context/PermissionContext';
 
 const UserForm = () => {
   const { id } = useParams();
@@ -25,6 +26,8 @@ const UserForm = () => {
     status: 'active',
     branch_ids: []
   });
+  const { hasPermission } = usePermissions();
+  const canEdit = isEditing ? hasPermission('users', 'update') : hasPermission('users', 'create');
 
   useEffect(() => {
     loadBranches();
@@ -92,6 +95,10 @@ const UserForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canEdit) {
+      alert('Bạn không có quyền thực hiện thao tác này');
+      return;
+    }
     setLoading(true);
     try {
       const data = {
@@ -127,6 +134,15 @@ const UserForm = () => {
 
   return (
     <div className="space-y-6">
+      {!canEdit && (
+        <Card>
+          <CardContent className="py-6">
+            <p className="text-sm text-gray-600">
+              Bạn chỉ có quyền xem thông tin nhân viên. Liên hệ quản trị viên để được cấp quyền tạo hoặc cập nhật nhân viên.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/users')}>
           <ArrowLeft size={20} />
@@ -157,6 +173,7 @@ const UserForm = () => {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 />
               </div>
               <div className="md:col-span-2">
@@ -167,6 +184,7 @@ const UserForm = () => {
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 />
               </div>
               <div>
@@ -176,6 +194,7 @@ const UserForm = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 />
               </div>
               <div>
@@ -185,6 +204,7 @@ const UserForm = () => {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 />
               </div>
               <div className="md:col-span-2">
@@ -194,6 +214,7 @@ const UserForm = () => {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 />
               </div>
               <div>
@@ -205,6 +226,7 @@ const UserForm = () => {
                   }
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 >
                   <option value="" disabled>
                     -- Chọn vai trò --
@@ -223,6 +245,7 @@ const UserForm = () => {
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 >
                   <option value="active">Hoạt động</option>
                   <option value="inactive">Ngừng hoạt động</option>
@@ -239,6 +262,7 @@ const UserForm = () => {
                           checked={formData.branch_ids?.includes(branch.id)}
                           onChange={() => handleBranchToggle(branch.id)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          disabled={!canEdit || loading}
                         />
                         <span className="text-sm">{branch.name}</span>
                       </label>
@@ -263,7 +287,7 @@ const UserForm = () => {
           >
             Hủy
           </Button>
-          <Button type="submit" form="user-form" disabled={loading} className="flex-1">
+          <Button type="submit" form="user-form" disabled={loading || !canEdit} className="flex-1">
             {loading ? 'Đang lưu...' : 'Lưu'}
           </Button>
         </div>

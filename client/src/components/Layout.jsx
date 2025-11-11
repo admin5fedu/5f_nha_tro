@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppSettings } from '../context/SettingsContext';
 import Header from './Header';
 import { Button } from './ui/button';
+import { usePermissions } from '../context/PermissionContext';
 import {
   LayoutDashboard,
   UserCog,
@@ -39,13 +40,93 @@ import {
   LineChart,
   ScrollText
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
+const BASE_MENU_ITEMS = [
+  {
+    path: '/dashboard',
+    module: 'dashboard',
+    icon: LayoutDashboard,
+    label: 'Tổng quan',
+    single: true
+  },
+  {
+    label: 'Chi nhánh & Phòng',
+    icon: Building2,
+    submenu: [
+      { path: '/branches', module: 'branches', icon: MapPin, label: 'Chi nhánh' },
+      { path: '/rooms', module: 'rooms', icon: DoorOpen, label: 'Phòng trọ' },
+      { path: '/assets', module: 'assets', icon: Boxes, label: 'Tài sản' },
+      { path: '/images', module: 'images', icon: ImageIcon, label: 'Hình ảnh' },
+      { path: '/services', module: 'services', icon: Zap, label: 'Dịch vụ' },
+      { path: '/meter-readings', module: 'meter-readings', icon: Gauge, label: 'Sổ ghi dịch vụ' }
+    ]
+  },
+  {
+    label: 'Khách thuê',
+    icon: Users,
+    submenu: [
+      { path: '/tenants', module: 'tenants', icon: UserCircle, label: 'Khách thuê' },
+      { path: '/vehicles', module: 'vehicles', icon: Car, label: 'Phương tiện' }
+    ]
+  },
+  {
+    label: 'Công việc',
+    icon: ClipboardList,
+    submenu: [{ path: '/tasks', module: 'tasks', icon: CheckSquare, label: 'Công việc' }]
+  },
+  {
+    label: 'Tài chính',
+    icon: DollarSign,
+    submenu: [
+      { path: '/contracts', module: 'contracts', icon: FileText, label: 'Hợp đồng' },
+      { path: '/invoices', module: 'invoices', icon: Receipt, label: 'Hóa đơn' },
+      { path: '/accounts', module: 'accounts', icon: Wallet, label: 'Tài khoản' },
+      { path: '/transactions', module: 'transactions', icon: PiggyBank, label: 'Sổ thu chi' },
+      { path: '/financial-categories', module: 'financial-categories', icon: Layers, label: 'Danh mục tài chính' }
+    ]
+  },
+  {
+    label: 'Báo cáo',
+    icon: BarChart3,
+    submenu: [
+      { path: '/reports/profit-loss', module: 'profit-loss', icon: BarChart3, label: 'Lãi/Lỗ' },
+      {
+        path: '/reports/accounts-receivable',
+        module: 'accounts-receivable',
+        icon: FileWarning,
+        label: 'Công nợ'
+      },
+      { path: '/reports/revenue', module: 'revenue', icon: LineChart, label: 'Phân tích doanh thu' },
+      { path: '/reports/cashflow', module: 'cashflow', icon: ScrollText, label: 'Thu/Chi chi tiết' }
+    ]
+  },
+  {
+    label: 'Thiết lập',
+    icon: SlidersHorizontal,
+    submenu: [
+      { path: '/settings', module: 'settings', icon: Building, label: 'Thông tin công ty' },
+      { path: '/users', module: 'users', icon: UserCog, label: 'Nhân viên' },
+      { path: '/roles', module: 'roles', icon: ShieldCheck, label: 'Vai trò' },
+      { path: '/permissions', module: 'permissions', icon: KeyRound, label: 'Phân quyền' }
+    ]
+  }
+];
+
+const BOTTOM_NAV_BASE = [
+  { path: '/dashboard', module: 'dashboard', icon: LayoutDashboard, label: 'Tổng quan' },
+  { path: '/tenants', module: 'tenants', icon: Users, label: 'Khách thuê' },
+  { path: '/rooms', module: 'rooms', icon: DoorOpen, label: 'Phòng' },
+  { path: '/tasks', module: 'tasks', icon: ClipboardList, label: 'Công việc' },
+  { path: '/transactions', module: 'transactions', icon: PiggyBank, label: 'Thu chi' }
+];
 
 const shadowMobileNav = 'shadow-[0_-6px_24px_rgba(15,23,42,0.08)]';
 const safePaddingBottom = 'pb-[env(safe-area-inset-bottom,0)]';
 
 const Layout = () => {
   const { user, logout } = useAuth();
+  const { hasPermission, loading: permissionLoading } = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -56,13 +137,46 @@ const Layout = () => {
   const appLogo = settings?.app_logo || null;
   const appInitial = appName.charAt(0).toUpperCase();
 
+  const menuItems = useMemo(() => {
+    if (permissionLoading) return [];
+    return BASE_MENU_ITEMS
+      .map((item) => {
+        if (item.single) {
+          if (!item.module || hasPermission(item.module, 'view')) {
+            return item;
+          }
+          return null;
+        }
+
+        const filteredSubmenu = (item.submenu || []).filter((subItem) => {
+          if (!subItem.module) return true;
+          return hasPermission(subItem.module, 'view');
+        });
+
+        if (filteredSubmenu.length === 0) {
+          return null;
+        }
+
+        return {
+          ...item,
+          submenu: filteredSubmenu
+        };
+      })
+      .filter(Boolean);
+  }, [hasPermission, permissionLoading]);
+
+  const bottomNavItems = useMemo(() => {
+    if (permissionLoading) return [];
+    return BOTTOM_NAV_BASE.filter((item) => !item.module || hasPermission(item.module, 'view'));
+  }, [hasPermission, permissionLoading]);
+
   // Auto-expand submenu if current path is in it
   useEffect(() => {
     const newOpenSubmenus = {};
     menuItems.forEach((item) => {
       if (item.submenu) {
-        const hasActiveChild = item.submenu.some(subItem => 
-          location.pathname === subItem.path || 
+        const hasActiveChild = item.submenu.some(subItem =>
+          location.pathname === subItem.path ||
           location.pathname.startsWith(subItem.path + '/')
         );
         if (hasActiveChild) {
@@ -71,82 +185,15 @@ const Layout = () => {
       }
     });
     setOpenSubmenus(newOpenSubmenus);
-  }, [location.pathname]);
+  }, [location.pathname, menuItems]);
 
-  const menuItems = [
-    {
-      path: '/dashboard',
-      icon: LayoutDashboard,
-      label: 'Tổng quan',
-      single: true
-    },
-    {
-      label: 'Chi nhánh & Phòng',
-      icon: Building2,
-      submenu: [
-        { path: '/branches', icon: MapPin, label: 'Chi nhánh' },
-        { path: '/rooms', icon: DoorOpen, label: 'Phòng trọ' },
-        { path: '/assets', icon: Boxes, label: 'Tài sản' },
-        { path: '/images', icon: ImageIcon, label: 'Hình ảnh' },
-        { path: '/services', icon: Zap, label: 'Dịch vụ' },
-        { path: '/meter-readings', icon: Gauge, label: 'Sổ ghi dịch vụ' },
-      ]
-    },
-    {
-      label: 'Khách thuê',
-      icon: Users,
-      submenu: [
-        { path: '/tenants', icon: UserCircle, label: 'Khách thuê' },
-        { path: '/vehicles', icon: Car, label: 'Phương tiện' },
-      ]
-    },
-    {
-      label: 'Công việc',
-      icon: ClipboardList,
-      submenu: [
-        { path: '/tasks', icon: CheckSquare, label: 'Công việc' },
-      ]
-    },
-    {
-      label: 'Tài chính',
-      icon: DollarSign,
-      submenu: [
-        { path: '/contracts', icon: FileText, label: 'Hợp đồng' },
-        { path: '/invoices', icon: Receipt, label: 'Hóa đơn' },
-        { path: '/accounts', icon: Wallet, label: 'Tài khoản' },
-        { path: '/transactions', icon: PiggyBank, label: 'Sổ thu chi' },
-        { path: '/financial-categories', icon: Layers, label: 'Danh mục tài chính' },
-      ]
-    },
-    {
-      label: 'Báo cáo',
-      icon: BarChart3,
-      submenu: [
-        { path: '/reports/profit-loss', icon: BarChart3, label: 'Lãi/Lỗ' },
-        { path: '/reports/accounts-receivable', icon: FileWarning, label: 'Công nợ' },
-        { path: '/reports/revenue', icon: LineChart, label: 'Phân tích doanh thu' },
-        { path: '/reports/cashflow', icon: ScrollText, label: 'Thu/Chi chi tiết' },
-      ]
-    },
-    {
-      label: 'Thiết lập',
-      icon: SlidersHorizontal,
-      submenu: [
-        { path: '/settings', icon: Building, label: 'Thông tin công ty' },
-        { path: '/users', icon: UserCog, label: 'Nhân viên' },
-        { path: '/roles', icon: ShieldCheck, label: 'Vai trò' },
-        { path: '/permissions', icon: KeyRound, label: 'Phân quyền' },
-      ]
-    }
-  ];
-
-  const bottomNavItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Tổng quan' },
-    { path: '/tenants', icon: Users, label: 'Khách thuê' },
-    { path: '/rooms', icon: DoorOpen, label: 'Phòng' },
-    { path: '/tasks', icon: ClipboardList, label: 'Công việc' },
-    { path: '/transactions', icon: PiggyBank, label: 'Thu chi' },
-  ];
+  if (permissionLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Đang tải phân quyền...</div>
+      </div>
+    );
+  }
 
   const isPathActive = (targetPath) => {
     if (targetPath === '/dashboard') {
