@@ -2,11 +2,11 @@
 // This wrapper provides axios-like interface for Firebase operations
 import { database } from './firebase';
 import { ensureFirebaseAuthSession } from './firebaseAuth';
-import {
-  ref,
-  get,
-  set,
-  remove,
+import { 
+  ref, 
+  get, 
+  set, 
+  remove, 
   update
 } from 'firebase/database';
 
@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS = {
 const objectToArray = (obj) => {
   if (!obj) return [];
   if (Array.isArray(obj)) return obj;
-
+  
   return Object.entries(obj).map(([key, value]) => {
     if (typeof value === 'object' && value !== null) {
       return { firebase_key: key, ...value };
@@ -106,7 +106,7 @@ const filterableParams = (filters) => {
 
 const findById = (data, id) => {
   if (!data || id === null || Number.isNaN(id)) return null;
-
+  
   if (Array.isArray(data)) {
     return data.find((item) => item?.id === id) || null;
   }
@@ -119,31 +119,31 @@ const findById = (data, id) => {
       }
     }
   }
-
+  
   return null;
 };
 
 const applyFilters = (data, filters = {}) => {
   if (!filters || Object.keys(filters).length === 0) return data;
-
+  
   let filtered = Array.isArray(data) ? [...data] : objectToArray(data);
-
+  
   Object.entries(filters).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
     filtered = filtered.filter((item) => {
       const itemValue = item?.[key];
       if (typeof itemValue === 'string' && typeof value === 'string') {
         return itemValue.toLowerCase().includes(value.toLowerCase());
-      }
+        }
       if (typeof itemValue === 'number' && typeof value === 'string') {
         const parsed = Number(value);
         if (Number.isNaN(parsed)) return false;
         return itemValue === parsed;
       }
       return itemValue === value;
-    });
+      });
   });
-
+  
   return filtered;
 };
 
@@ -867,14 +867,14 @@ const firebaseApi = {
         if (!snapshot.exists()) {
           throw { response: { status: 404, data: { error: 'Không tìm thấy dữ liệu' } } };
         }
-
+        
         const data = snapshot.val();
         const item = findById(data, id);
-
+        
         if (!item) {
           throw { response: { status: 404, data: { error: 'Không tìm thấy dữ liệu' } } };
         }
-
+        
         if (subSegments.length > 0) {
           const subRefPath = [collection, item.firebase_key, ...subSegments].join('/');
           const subRef = ref(database, subRefPath);
@@ -906,12 +906,12 @@ const firebaseApi = {
       }
 
       const dbRef = ref(database, collection);
-      const snapshot = await get(dbRef);
-
-      if (!snapshot.exists()) {
-        return { data: [] };
-      }
-
+        const snapshot = await get(dbRef);
+        
+        if (!snapshot.exists()) {
+          return { data: [] };
+        }
+        
       const data = objectToArray(snapshot.val());
       return { data: applyFilters(data, listFilters) };
     } catch (error) {
@@ -967,30 +967,30 @@ const firebaseApi = {
           }
         };
       }
-
+      
       // Get current max ID to generate new ID
       const snapshot = await get(dbRef);
       let maxId = 0;
-
+      
       if (snapshot.exists()) {
         const data = snapshot.val();
         const items = objectToArray(data);
         maxId = Math.max(...items.map(item => item.id || 0), 0);
       }
-
+      
       const newId = maxId + 1;
       const newData = {
         id: newId,
         ...payload,
         created_at: payload.created_at || new Date().toISOString()
       };
-
+      
       // Generate Firebase key
       const firebaseKey = getFirebaseKey(collection, newId);
       const newRef = ref(database, `${collection}/${firebaseKey}`);
-
+      
       await set(newRef, newData);
-
+      
       return { data: newData };
     } catch (error) {
       console.error('Firebase POST error:', error);
@@ -1054,42 +1054,42 @@ const firebaseApi = {
           data: { message: 'Phân quyền đã được cập nhật thành công' }
         };
       }
-
+      
       if (!id) {
         throw { response: { status: 400, data: { error: 'ID không hợp lệ' } } };
       }
-
+      
       // Find the item first
       const dbRef = ref(database, collection);
       const snapshot = await get(dbRef);
-
+      
       if (!snapshot.exists()) {
         throw { response: { status: 404, data: { error: 'Không tìm thấy dữ liệu' } } };
       }
-
+      
       const data = snapshot.val();
       const item = findById(data, id);
-
+      
       if (!item) {
         throw { response: { status: 404, data: { error: 'Không tìm thấy dữ liệu' } } };
       }
-
+      
       // Update the item
       const firebaseKey = item.firebase_key;
       const updateRef = ref(database, `${collection}/${firebaseKey}`);
-
+      
       const updatedData = {
         ...item,
         ...payload,
         id: id,
         updated_at: new Date().toISOString()
       };
-
+      
       // Remove firebase_key from data before saving
       delete updatedData.firebase_key;
-
+      
       await set(updateRef, updatedData);
-
+      
       return { data: { message: 'Cập nhật thành công', ...updatedData } };
     } catch (error) {
       console.error('Firebase PUT error:', error);
@@ -1181,32 +1181,32 @@ const firebaseApi = {
     try {
       await ensureFirebaseAuthSession();
       const { collection, id } = parsePath(path);
-
+      
       if (!id) {
         throw { response: { status: 400, data: { error: 'ID không hợp lệ' } } };
       }
-
+      
       // Find the item first
       const dbRef = ref(database, collection);
       const snapshot = await get(dbRef);
-
+      
       if (!snapshot.exists()) {
         throw { response: { status: 404, data: { error: 'Không tìm thấy dữ liệu' } } };
       }
-
+      
       const data = snapshot.val();
       const item = findById(data, id);
-
+      
       if (!item) {
         throw { response: { status: 404, data: { error: 'Không tìm thấy dữ liệu' } } };
       }
-
+      
       // Delete the item
       const firebaseKey = item.firebase_key;
       const deleteRef = ref(database, `${collection}/${firebaseKey}`);
-
+      
       await remove(deleteRef);
-
+      
       return { data: { message: 'Xóa thành công' } };
     } catch (error) {
       console.error('Firebase DELETE error:', error);

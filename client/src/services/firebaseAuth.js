@@ -135,7 +135,7 @@ export const loginWithCredentials = async (identifier, password) => {
       } catch (error) {
         if (error.code === 'auth/user-not-found') {
           return toError('Tài khoản chưa tồn tại trong hệ thống xác thực');
-        }
+    }
         if (error.code === 'auth/wrong-password') {
           return toError('Mật khẩu không chính xác');
         }
@@ -171,7 +171,7 @@ export const loginWithCredentials = async (identifier, password) => {
     } catch (syncError) {
       console.warn('Không thể đồng bộ quyền người dùng:', syncError);
     }
-
+    
     // Remove sensitive data
     const { password: _, firebase_key, ...userData } = user;
     

@@ -212,9 +212,9 @@ const Layout = () => {
                       }}
                     />
                   ) : (
-                    <div className="bg-white p-2 rounded-lg mr-3 shadow-md">
-                      <Building2 className="h-6 w-6 text-blue-600" />
-                    </div>
+                  <div className="bg-white p-2 rounded-lg mr-3 shadow-md">
+                    <Building2 className="h-6 w-6 text-blue-600" />
+                  </div>
                   )}
                   <h1 className="text-white text-xl font-bold truncate">{appName}</h1>
                 </div>
@@ -239,9 +239,9 @@ const Layout = () => {
                     }}
                   />
                 ) : (
-                  <div className="bg-white p-2 rounded-lg shadow-md">
-                    <Building2 className="h-6 w-6 text-blue-600" />
-                  </div>
+                <div className="bg-white p-2 rounded-lg shadow-md">
+                  <Building2 className="h-6 w-6 text-blue-600" />
+                </div>
                 )}
                 <button
                   onClick={() => setSidebarCollapsed(false)}
@@ -415,9 +415,9 @@ const Layout = () => {
                 }}
               />
             ) : (
-              <div className="bg-white p-1.5 rounded-lg">
-                <Building2 className="h-5 w-5 text-blue-600" />
-              </div>
+            <div className="bg-white p-1.5 rounded-lg">
+              <Building2 className="h-5 w-5 text-blue-600" />
+            </div>
             )}
             <h1 className="text-white text-lg font-bold truncate max-w-[160px]">{appName}</h1>
           </div>
