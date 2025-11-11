@@ -1,4 +1,5 @@
 import supabaseClient, { isSupabaseConfigured } from './supabaseClient';
+import { syncSupabaseAuthUser } from './supabaseAuthSync';
 
 const ensureClient = () => {
   if (!isSupabaseConfigured || !supabaseClient) {
@@ -32,7 +33,23 @@ const formatUser = (row) => {
   };
 };
 
-const baseSelect = `
+const listSelect = `
+  id,
+  username,
+  email,
+  full_name,
+  phone,
+  status,
+  role_id,
+  created_at,
+  roles:role_id ( code, name ),
+  user_branches (
+    branch_id,
+    branches ( name )
+  )
+`;
+
+const detailSelect = `
   id,
   username,
   email,
@@ -50,16 +67,27 @@ const baseSelect = `
   )
 `;
 
-export const fetchUsers = async () => {
+export const fetchUsers = async ({ limit = 25, offset = 0 } = {}) => {
   const supabase = ensureClient();
-  const { data, error } = await supabase.from('users').select(baseSelect).order('created_at', { ascending: false });
+  const rangeEnd = offset + limit - 1;
+  const { data, error, count } = await supabase
+    .from('users')
+    .select(listSelect, { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(offset, rangeEnd);
   if (error) throw error;
-  return (data || []).map(formatUser);
+  const formatted = (data || []).map(formatUser);
+  const total = typeof count === 'number' ? count : formatted.length;
+  return {
+    data: formatted,
+    total,
+    hasMore: offset + formatted.length < total
+  };
 };
 
 export const fetchUserById = async (id) => {
   const supabase = ensureClient();
-  const { data, error } = await supabase.from('users').select(baseSelect).eq('id', id).single();
+  const { data, error } = await supabase.from('users').select(detailSelect).eq('id', id).single();
   if (error) throw error;
   return formatUser(data);
 };
@@ -68,7 +96,7 @@ export const fetchUserByEmail = async (email) => {
   const supabase = ensureClient();
   const { data, error } = await supabase
     .from('users')
-    .select(baseSelect)
+    .select(detailSelect)
     .eq('email', email)
     .maybeSingle();
   if (error) throw error;
@@ -106,17 +134,53 @@ export const createUser = async ({ branch_ids = [], ...payload }) => {
     await syncUserBranches(data.id, branch_ids);
   }
 
+  try {
+    await syncSupabaseAuthUser({
+      email: data.email,
+      fullName: data.full_name,
+      password: payload.password
+    });
+  } catch (syncError) {
+    console.error('Failed to sync Supabase Auth user after creation:', syncError);
+    throw new Error('Không thể đồng bộ tài khoản đăng nhập. Vui lòng kiểm tra cấu hình SUPABASE_AUTH_SYNC.');
+  }
+
   return fetchUserById(data.id);
 };
 
 export const updateUser = async (id, { branch_ids = [], ...payload }) => {
   const supabase = ensureClient();
+  let existing;
+  try {
+    existing = await fetchUserById(id);
+  } catch (err) {
+    console.warn('Unable to load existing user before update:', err);
+  }
   const updatePayload = { ...payload, updated_at: new Date().toISOString() };
   const { error } = await supabase.from('users').update(updatePayload).eq('id', id);
   if (error) throw error;
 
   await syncUserBranches(id, branch_ids);
-  return fetchUserById(id);
+  const updated = await fetchUserById(id);
+
+  const targetEmail = updated?.email || existing?.email;
+  const emailChanged = existing && targetEmail && existing.email !== targetEmail;
+  const shouldSyncAuth = Boolean(targetEmail && (emailChanged || payload.password));
+
+  if (shouldSyncAuth) {
+    try {
+      await syncSupabaseAuthUser({
+        email: targetEmail,
+        fullName: updated?.full_name || payload.full_name || existing?.full_name,
+        password: payload.password
+      });
+    } catch (syncError) {
+      console.error('Failed to sync Supabase Auth user after update:', syncError);
+      throw new Error('Không thể đồng bộ tài khoản đăng nhập sau khi cập nhật. Vui lòng kiểm tra cấu hình SUPABASE_AUTH_SYNC.');
+    }
+  }
+
+  return updated;
 };
 
 export const deleteUser = async (id) => {

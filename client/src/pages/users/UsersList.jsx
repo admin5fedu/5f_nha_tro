@@ -11,6 +11,10 @@ import { usePermissions } from '../../context/PermissionContext';
 const UsersList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const pageSize = 25;
   const [filters, setFilters] = useState({});
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
@@ -22,16 +26,35 @@ const UsersList = () => {
     loadUsers();
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = async (pageToLoad = 0, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     try {
-      const data = await fetchUsers();
-      setUsers(data);
+      const { data, hasMore: moreAvailable, total } = await fetchUsers({ limit: pageSize, offset: pageToLoad * pageSize });
+      setUsers((prev) => (append ? [...prev, ...data] : data));
+      setHasMore(moreAvailable);
+      setPage(pageToLoad);
+      if (!append && pageToLoad === 0 && total === 0) {
+        setHasMore(false);
+      }
     } catch (error) {
       console.error('Error loading users:', error);
       alert(error.message || 'Lỗi khi tải danh sách nhân viên');
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    loadUsers(page + 1, true);
   };
 
   const handleDelete = async (id) => {
@@ -254,6 +277,14 @@ const UsersList = () => {
           </CardContent>
         </Card>
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center py-4">
+          <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Đang tải thêm...' : 'Tải thêm nhân viên'}
+          </Button>
+        </div>
+      )}
 
       {/* Mobile: Card View */}
       <div className="lg:hidden grid grid-cols-1 gap-4">

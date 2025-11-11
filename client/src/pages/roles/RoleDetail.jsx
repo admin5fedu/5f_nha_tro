@@ -1,24 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../services/api';
 import { ArrowLeft, Edit, Trash2, Shield, Users } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { fetchRoleById, deleteRole } from '../../services/supabaseRoles';
+import { usePermissions } from '../../context/PermissionContext';
 
 const RoleDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { hasPermission } = usePermissions();
+  const canView = hasPermission('roles', 'view');
+  const canUpdate = hasPermission('roles', 'update');
+  const canDelete = hasPermission('roles', 'delete');
 
   useEffect(() => {
-    loadRole();
-  }, [id]);
+    if (canView) {
+      loadRole();
+    } else {
+      setLoading(false);
+    }
+  }, [id, canView]);
 
   const loadRole = async () => {
     try {
-      const response = await api.get(`/roles/${id}`);
-      setRole(response.data);
+      const data = await fetchRoleById(id);
+      if (!data) {
+        alert('Không tìm thấy vai trò');
+        navigate('/roles');
+        return;
+      }
+      setRole(data);
     } catch (error) {
       console.error('Error loading role:', error);
       alert('Lỗi khi tải thông tin vai trò');
@@ -29,17 +43,31 @@ const RoleDetail = () => {
   };
 
   const handleDelete = async () => {
+    if (!canDelete) {
+      alert('Bạn không có quyền xóa vai trò');
+      return;
+    }
     if (!confirm('Bạn có chắc muốn xóa vai trò này?')) return;
     try {
-      await api.delete(`/roles/${id}`);
+      await deleteRole(id);
       navigate('/roles');
     } catch (error) {
-      alert(error.response?.data?.error || 'Lỗi khi xóa vai trò');
+      alert(error.message || 'Lỗi khi xóa vai trò');
     }
   };
 
   if (loading) {
     return <div className="text-center py-8">Đang tải...</div>;
+  }
+
+  if (!canView) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-gray-600">
+          Bạn không có quyền xem thông tin vai trò.
+        </CardContent>
+      </Card>
+    );
   }
 
   if (!role) {
@@ -66,14 +94,18 @@ const RoleDetail = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => navigate(`/roles/${id}/edit`)}>
-              <Edit size={16} className="mr-2" />
-              Sửa
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 size={16} className="mr-2" />
-              Xóa
-            </Button>
+            {canUpdate && (
+              <Button onClick={() => navigate(`/roles/${id}/edit`)}>
+                <Edit size={16} className="mr-2" />
+                Sửa
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 size={16} className="mr-2" />
+                Xóa
+              </Button>
+            )}
           </div>
         </div>
       </div>

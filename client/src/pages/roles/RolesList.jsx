@@ -1,23 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
 import { Plus, Shield, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { fetchRoles, deleteRole } from '../../services/supabaseRoles';
+import { usePermissions } from '../../context/PermissionContext';
 
 const RolesList = () => {
   const navigate = useNavigate();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { hasPermission } = usePermissions();
+  const canView = hasPermission('roles', 'view');
+  const canCreate = hasPermission('roles', 'create');
+  const canUpdate = hasPermission('roles', 'update');
+  const canDelete = hasPermission('roles', 'delete');
 
   useEffect(() => {
-    loadRoles();
-  }, []);
+    if (canView) {
+      loadRoles();
+    } else {
+      setLoading(false);
+    }
+  }, [canView]);
 
   const loadRoles = async () => {
     try {
-      const response = await api.get('/roles');
-      setRoles(response.data);
+      const data = await fetchRoles();
+      setRoles(data || []);
     } catch (error) {
       console.error('Error loading roles:', error);
       alert('Lỗi khi tải danh sách vai trò');
@@ -27,12 +37,16 @@ const RolesList = () => {
   };
 
   const handleDelete = async (id, name) => {
+    if (!canDelete) {
+      alert('Bạn không có quyền xóa vai trò');
+      return;
+    }
     if (!confirm(`Bạn có chắc muốn xóa vai trò "${name}"?`)) return;
     try {
-      await api.delete(`/roles/${id}`);
+      await deleteRole(id);
       loadRoles();
     } catch (error) {
-      alert(error.response?.data?.error || 'Lỗi khi xóa vai trò');
+      alert(error.message || 'Lỗi khi xóa vai trò');
     }
   };
 
@@ -40,13 +54,25 @@ const RolesList = () => {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 
+  if (!canView) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-gray-600">
+          Bạn không có quyền xem danh sách vai trò.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-end">
-        <Button onClick={() => navigate('/roles/new')}>
-          <Plus size={16} className="mr-2" />
-          Thêm vai trò
-        </Button>
+        {canCreate && (
+          <Button onClick={() => navigate('/roles/new')}>
+            <Plus size={16} className="mr-2" />
+            Thêm vai trò
+          </Button>
+        )}
       </div>
 
       {roles.length === 0 ? (
@@ -54,10 +80,12 @@ const RolesList = () => {
           <CardContent className="text-center py-12">
             <Shield className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-4">Chưa có vai trò nào</p>
-            <Button onClick={() => navigate('/roles/new')}>
-              <Plus size={16} className="mr-2" />
-              Thêm vai trò đầu tiên
-            </Button>
+            {canCreate && (
+              <Button onClick={() => navigate('/roles/new')}>
+                <Plus size={16} className="mr-2" />
+                Thêm vai trò đầu tiên
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -117,21 +145,34 @@ const RolesList = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/roles/${role.id}/edit`)}
-                          >
-                            <Edit size={14} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(role.id, role.name)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                          {canView && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/roles/${role.id}`)}
+                            >
+                              <Eye size={14} />
+                            </Button>
+                          )}
+                          {canUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/roles/${role.id}/edit`)}
+                            >
+                              <Edit size={14} />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(role.id, role.name)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -13,7 +13,9 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 
 const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
   }
 });
 

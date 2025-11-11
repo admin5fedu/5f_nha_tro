@@ -35,6 +35,7 @@ app.use('/api/permissions', require('./routes/permissions'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/meter-readings', require('./routes/meter-readings'));
 app.use('/api/invoice-services', require('./routes/invoice-services'));
+app.use('/api/supabase', require('./routes/supabaseSync'));
 
 // Serve static files from React app in production
 if (process.env.NODE_ENV === 'production') {
