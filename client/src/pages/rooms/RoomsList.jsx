@@ -1,47 +1,88 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import { Plus, Edit, Trash2, DoorOpen, MapPin, Users, Home } from 'lucide-react';
+import { Plus, Edit, Trash2, DoorOpen, Home } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import FilterPanel from '../../components/FilterPanel';
 import { objectContainsTerm } from '../../utils/search';
+import { fetchRooms, deleteRoom } from '../../services/supabaseRooms';
+import { fetchBranches } from '../../services/supabaseBranches';
+import { usePermissions } from '../../context/PermissionContext';
 
 const RoomsList = () => {
   const [rooms, setRooms] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const pageSize = 25;
   const [filters, setFilters] = useState({});
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+  const canView = hasPermission('rooms', 'view');
+  const canCreate = hasPermission('rooms', 'create');
+  const canUpdate = hasPermission('rooms', 'update');
+  const canDelete = hasPermission('rooms', 'delete');
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const [roomsRes, branchesRes] = await Promise.all([
-        api.get('/rooms'),
-        api.get('/branches')
-      ]);
-      setRooms(roomsRes.data);
-      setBranches(branchesRes.data);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      alert('Lỗi khi tải dữ liệu');
-    } finally {
+    if (canView) {
+      loadBranches();
+      loadRooms();
+    } else {
       setLoading(false);
+    }
+  }, [canView]);
+
+  const loadBranches = async () => {
+    try {
+      const { data } = await fetchBranches({ limit: 200 });
+      setBranches(data);
+    } catch (error) {
+      console.error('Error loading branches:', error);
+    }
+  };
+
+  const loadRooms = async (pageToLoad = 0, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    try {
+      const { data, hasMore: moreAvailable } = await fetchRooms({ limit: pageSize, offset: pageToLoad * pageSize });
+      setRooms((prev) => (append ? [...prev, ...data] : data));
+      setHasMore(moreAvailable);
+      setPage(pageToLoad);
+    } catch (error) {
+      console.error('Error loading rooms:', error);
+      alert(error.message || 'Lỗi khi tải dữ liệu');
+    } finally {
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      alert('Bạn không có quyền xóa phòng');
+      return;
+    }
     if (!confirm('Bạn có chắc muốn xóa phòng này?')) return;
     try {
-      await api.delete(`/rooms/${id}`);
-      loadData();
+      await deleteRoom(id);
+      loadRooms(page, false);
     } catch (error) {
-      alert('Lỗi khi xóa phòng');
+      alert(error.message || 'Lỗi khi xóa phòng');
     }
+  };
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    loadRooms(page + 1, true);
   };
 
   const filteredRooms = rooms.filter((room) => {
@@ -88,6 +129,16 @@ const RoomsList = () => {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 
+  if (!canView) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-gray-600">
+          Bạn không có quyền xem danh sách phòng.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Filter Panel */}
@@ -99,10 +150,12 @@ const RoomsList = () => {
           initialFilters={filters}
           searchPlaceholder="Tìm phòng, chi nhánh, mô tả..."
         />
-        <Button onClick={() => navigate('/rooms/new')} className="flex items-center gap-2">
-          <Plus size={16} />
-          Thêm
-        </Button>
+        {canCreate && (
+          <Button onClick={() => navigate('/rooms/new')} className="flex items-center gap-2">
+            <Plus size={16} />
+            Thêm
+          </Button>
+        )}
       </div>
 
       {/* Desktop: Table View */}
@@ -197,24 +250,28 @@ const RoomsList = () => {
                           className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 bg-white sticky right-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/rooms/${room.id}/edit`)}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(room.id);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                          {canUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/rooms/${room.id}/edit`)}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(room.id);
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -225,6 +282,14 @@ const RoomsList = () => {
           </CardContent>
         </Card>
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center py-4">
+          <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Đang tải thêm...' : 'Tải thêm phòng'}
+          </Button>
+        </div>
+      )}
 
       {/* Mobile: Card View */}
       <div className="lg:hidden grid grid-cols-1 gap-4">
@@ -322,22 +387,26 @@ const RoomsList = () => {
                   className="flex gap-2 pt-4 border-t"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => navigate(`/rooms/${room.id}/edit`)}
-                  >
-                    <Edit size={16} className="mr-2" />
-                    Sửa
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={() => handleDelete(room.id)}
-                  >
-                    <Trash2 size={16} className="mr-2" />
-                    Xóa
-                  </Button>
+                  {canUpdate && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => navigate(`/rooms/${room.id}/edit`)}
+                    >
+                      <Edit size={16} className="mr-2" />
+                      Sửa
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleDelete(room.id)}
+                    >
+                      <Trash2 size={16} className="mr-2" />
+                      Xóa
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

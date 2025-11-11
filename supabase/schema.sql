@@ -88,6 +88,117 @@ create table if not exists public.branches (
   created_at    timestamptz not null default now()
 );
 
+alter table public.branches
+  add column if not exists updated_at timestamptz default now();
+
+alter table public.branches
+  add column if not exists notes text;
+
+alter table public.branches
+  add column if not exists representative_name text;
+
+alter table public.branches
+  add column if not exists representative_position text;
+
+alter table public.branches
+  add column if not exists representative_id_card text;
+
+alter table public.branches
+  add column if not exists representative_phone text;
+
+alter table public.branches
+  add column if not exists representative_address text;
+
+alter table public.branches
+  add column if not exists account_number text;
+
+alter table public.branches
+  add column if not exists account_holder text;
+
+alter table public.branches
+  add column if not exists bank_name text;
+
+alter table public.branches
+  add column if not exists bank_branch text;
+
+alter table public.branches
+  add column if not exists qr_code text;
+
+create unique index if not exists idx_branches_name on public.branches (lower(name));
+
+with new_branches as (
+  select *
+  from (values
+    (
+      'Chi nhánh Trung Tâm',
+      '123 Lê Lợi, Quận 1, TP.HCM',
+      '0901 234 567',
+      'Nguyễn Thị Quản Lý',
+      'active',
+      'Trần Thị Thanh',
+      'Giám đốc',
+      '0799 123 456',
+      '079123456789',
+      '12 Nguyễn Huệ, Quận 1, TP.HCM',
+      null,
+      null,
+      null,
+      null
+    ),
+    (
+      'Chi nhánh Bình Thạnh',
+      '45 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+      '0908 765 432',
+      'Lê Văn Bình',
+      'active',
+      'Phạm Ngọc Ánh',
+      'Quản lý chi nhánh',
+      '0988 765 432',
+      '088765432198',
+      '45 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+      null,
+      null,
+      null,
+      null
+    )
+  ) as v(name, address, phone, manager_name, status, representative_name, representative_position, representative_phone, representative_id_card, representative_address, account_number, account_holder, bank_name, bank_branch)
+)
+insert into public.branches (
+  name,
+  address,
+  phone,
+  manager_name,
+  status,
+  representative_name,
+  representative_position,
+  representative_phone,
+  representative_id_card,
+  representative_address,
+  account_number,
+  account_holder,
+  bank_name,
+  bank_branch
+)
+select
+  nb.name,
+  nb.address,
+  nb.phone,
+  nb.manager_name,
+  nb.status,
+  nb.representative_name,
+  nb.representative_position,
+  nb.representative_phone,
+  nb.representative_id_card,
+  nb.representative_address,
+  nb.account_number,
+  nb.account_holder,
+  nb.bank_name,
+  nb.bank_branch
+from new_branches nb
+where not exists (
+  select 1 from public.branches b where lower(b.name) = lower(nb.name)
+);
+
 create table if not exists public.user_branches (
   id         bigserial primary key,
   user_id    bigint not null references public.users (id) on delete cascade,
@@ -111,6 +222,80 @@ create table if not exists public.rooms (
   amenities      text,
   created_at     timestamptz not null default now()
 );
+
+alter table public.rooms
+  add column if not exists updated_at timestamptz default now();
+
+create unique index if not exists idx_rooms_branch_room_number
+  on public.rooms (branch_id, lower(room_number));
+
+with branch_lookup as (
+  select id, lower(name) as name_key
+  from public.branches
+),
+new_room_def as (
+  select *
+  from (values
+    ('chi nhánh trung tâm', '101', 1, 20, 1500000, 2000000, 'occupied', 'Phòng rộng với cửa sổ lớn', 'Điều hòa, Tủ lạnh'),
+    ('chi nhánh trung tâm', '102', 1, 18, 1300000, 1500000, 'available', 'Phòng thoáng mát, view đường phố', 'Điều hòa, Wifi'),
+    ('chi nhánh bình thạnh', '201', 2, 22, 1700000, 2500000, 'maintenance', 'Phòng đang bảo trì hệ thống điện', 'Điều hòa'),
+    ('chi nhánh bình thạnh', '202', 2, 19, 1400000, 1500000, 'available', 'Phòng ban công, đầy đủ nội thất', 'Điều hòa, Máy giặt')
+  ) as v(branch_name_key, room_number, floor, area, price, deposit, status, description, amenities)
+),
+new_rooms as (
+  select
+    bl.id as branch_id,
+    def.room_number,
+    def.floor,
+    def.area,
+    def.price,
+    def.deposit,
+    def.status,
+    def.description,
+    def.amenities
+  from new_room_def def
+  join branch_lookup bl on bl.name_key = def.branch_name_key
+)
+insert into public.rooms (
+  branch_id, room_number, floor, area, price, deposit, status, description, amenities
+)
+select
+  nr.branch_id,
+  nr.room_number,
+  nr.floor,
+  nr.area,
+  nr.price,
+  nr.deposit,
+  nr.status,
+  nr.description,
+  nr.amenities
+from new_rooms nr
+where not exists (
+  select 1
+  from public.rooms r
+  where r.branch_id = nr.branch_id
+    and lower(r.room_number) = lower(nr.room_number)
+);
+
+alter table public.rooms enable row level security;
+
+drop policy if exists rooms_select on public.rooms;
+drop policy if exists rooms_insert on public.rooms;
+drop policy if exists rooms_update on public.rooms;
+drop policy if exists rooms_delete on public.rooms;
+
+create policy rooms_select on public.rooms
+  for select using ( public.app_has_permission('rooms', 'view') );
+
+create policy rooms_insert on public.rooms
+  for insert with check ( public.app_has_permission('rooms', 'create') );
+
+create policy rooms_update on public.rooms
+  for update using ( public.app_has_permission('rooms', 'update') )
+  with check ( public.app_has_permission('rooms', 'update') );
+
+create policy rooms_delete on public.rooms
+  for delete using ( public.app_has_permission('rooms', 'delete') );
 
 create table if not exists public.tenants (
   id                  bigserial primary key,
@@ -171,6 +356,9 @@ create table if not exists public.accounts (
   status          text not null default 'active',
   created_at      timestamptz not null default now()
 );
+
+alter table public.branches
+  add column if not exists account_id bigint references public.accounts (id) on delete set null;
 
 create table if not exists public.financial_categories (
   id            bigserial primary key,

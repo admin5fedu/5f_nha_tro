@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../services/api';
 import { ArrowLeft, Edit, Trash2, Building2, DoorOpen, Plus, Eye, Image as ImageIcon, Package } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { fetchBranchById, deleteBranch } from '../../services/supabaseBranches';
+import api from '../../services/api';
+import { usePermissions } from '../../context/PermissionContext';
 
 const BranchDetail = () => {
   const { id } = useParams();
@@ -12,16 +14,29 @@ const BranchDetail = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [roomsLoading, setRoomsLoading] = useState(true);
+  const { hasPermission } = usePermissions();
+  const canView = hasPermission('branches', 'view');
+  const canUpdate = hasPermission('branches', 'update');
+  const canDelete = hasPermission('branches', 'delete');
 
   useEffect(() => {
-    loadBranch();
-    loadRooms();
-  }, [id]);
+    if (canView) {
+      loadBranch();
+      loadRooms();
+    } else {
+      setLoading(false);
+    }
+  }, [id, canView]);
 
   const loadBranch = async () => {
     try {
-      const response = await api.get(`/branches/${id}`);
-      setBranch(response.data);
+      const data = await fetchBranchById(id);
+      if (!data) {
+        alert('Không tìm thấy chi nhánh');
+        navigate('/branches');
+        return;
+      }
+      setBranch(data);
     } catch (error) {
       console.error('Error loading branch:', error);
       alert('Lỗi khi tải thông tin chi nhánh');
@@ -43,17 +58,31 @@ const BranchDetail = () => {
   };
 
   const handleDelete = async () => {
+    if (!canDelete) {
+      alert('Bạn không có quyền xóa chi nhánh');
+      return;
+    }
     if (!confirm('Bạn có chắc muốn xóa chi nhánh này?')) return;
     try {
-      await api.delete(`/branches/${id}`);
+      await deleteBranch(id);
       navigate('/branches');
     } catch (error) {
-      alert('Lỗi khi xóa chi nhánh');
+      alert(error.message || 'Lỗi khi xóa chi nhánh');
     }
   };
 
   if (loading) {
     return <div className="text-center py-8">Đang tải...</div>;
+  }
+
+  if (!canView) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-gray-600">
+          Bạn không có quyền xem thông tin chi nhánh.
+        </CardContent>
+      </Card>
+    );
   }
 
   if (!branch) {
@@ -74,14 +103,18 @@ const BranchDetail = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => navigate(`/branches/${id}/edit`)}>
-              <Edit size={16} className="mr-2" />
-              Sửa
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 size={16} className="mr-2" />
-              Xóa
-            </Button>
+            {canUpdate && (
+              <Button onClick={() => navigate(`/branches/${id}/edit`)}>
+                <Edit size={16} className="mr-2" />
+                Sửa
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 size={16} className="mr-2" />
+                Xóa
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -142,6 +175,14 @@ const BranchDetail = () => {
                   {new Date(branch.created_at).toLocaleDateString('vi-VN')}
                 </p>
               </div>
+              {branch.updated_at && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Cập nhật lần cuối</p>
+                  <p className="text-gray-800 mt-1">
+                    {new Date(branch.updated_at).toLocaleDateString('vi-VN')}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium text-gray-500">Tổng số phòng</p>
                 <p className="text-2xl font-bold text-blue-600 mt-1">{rooms.length}</p>

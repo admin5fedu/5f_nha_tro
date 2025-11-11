@@ -1,24 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../services/api';
-import { ArrowLeft, Edit, Trash2, DoorOpen, Image as ImageIcon, Package, Eye, Users, FileText, Calendar, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, DoorOpen, Image as ImageIcon, Package, Users, FileText, Calendar, Phone, Mail } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { fetchRoomById, deleteRoom } from '../../services/supabaseRooms';
+import { usePermissions } from '../../context/PermissionContext';
 
 const RoomDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { hasPermission } = usePermissions();
+  const canView = hasPermission('rooms', 'view');
+  const canUpdate = hasPermission('rooms', 'update');
+  const canDelete = hasPermission('rooms', 'delete');
 
   useEffect(() => {
-    loadRoom();
-  }, [id]);
+    if (canView) {
+      loadRoom();
+    } else {
+      setLoading(false);
+    }
+  }, [id, canView]);
 
   const loadRoom = async () => {
     try {
-      const response = await api.get(`/rooms/${id}`);
-      setRoom(response.data);
+      const data = await fetchRoomById(id);
+      if (!data) {
+        alert('Không tìm thấy phòng');
+        navigate('/rooms');
+        return;
+      }
+      setRoom(data);
     } catch (error) {
       console.error('Error loading room:', error);
       alert('Lỗi khi tải thông tin phòng');
@@ -29,17 +43,31 @@ const RoomDetail = () => {
   };
 
   const handleDelete = async () => {
+    if (!canDelete) {
+      alert('Bạn không có quyền xóa phòng');
+      return;
+    }
     if (!confirm('Bạn có chắc muốn xóa phòng này?')) return;
     try {
-      await api.delete(`/rooms/${id}`);
+      await deleteRoom(id);
       navigate('/rooms');
     } catch (error) {
-      alert('Lỗi khi xóa phòng');
+      alert(error.message || 'Lỗi khi xóa phòng');
     }
   };
 
   if (loading) {
     return <div className="text-center py-8">Đang tải...</div>;
+  }
+
+  if (!canView) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-gray-600">
+          Bạn không có quyền xem thông tin phòng.
+        </CardContent>
+      </Card>
+    );
   }
 
   if (!room) {
@@ -60,14 +88,18 @@ const RoomDetail = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => navigate(`/rooms/${id}/edit`)}>
-              <Edit size={16} className="mr-2" />
-              Sửa
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 size={16} className="mr-2" />
-              Xóa
-            </Button>
+            {canUpdate && (
+              <Button onClick={() => navigate(`/rooms/${id}/edit`)}>
+                <Edit size={16} className="mr-2" />
+                Sửa
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 size={16} className="mr-2" />
+                Xóa
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -180,6 +212,14 @@ const RoomDetail = () => {
                   {new Date(room.created_at).toLocaleDateString('vi-VN')}
                 </p>
               </div>
+              {room.updated_at && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Cập nhật lần cuối</p>
+                  <p className="text-gray-800 mt-1">
+                    {new Date(room.updated_at).toLocaleDateString('vi-VN')}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -276,128 +316,71 @@ const RoomDetail = () => {
         )}
 
         {/* Contracts and Tenants */}
-        {room.contracts && room.contracts.length > 0 && (
+        {room.active_contracts && room.active_contracts.length > 0 && (
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <FileText className="h-6 w-6 text-blue-600" />
+                <div className="bg-green-100 p-3 rounded-lg">
+                  <FileText className="h-6 w-6 text-green-600" />
                 </div>
-                <CardTitle>Hợp đồng và Khách thuê ({room.contracts.length})</CardTitle>
+                <CardTitle>Hợp đồng hiện tại ({room.active_contracts.length})</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {room.contracts.map((contract) => (
-                  <Card key={contract.id} className="border-l-4 border-l-blue-500">
-                    <CardContent className="pt-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <FileText size={18} className="text-blue-600" />
-                            <h3 className="font-semibold text-lg">Hợp đồng #{contract.id}</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              contract.status === 'active' 
-                                ? 'bg-green-100 text-green-800' 
-                                : contract.status === 'expired'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {contract.status === 'active' ? 'Đang hoạt động' : 
-                               contract.status === 'expired' ? 'Đã hết hạn' : 'Đã hủy'}
-                            </span>
-                          </div>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Calendar size={14} className="text-gray-400" />
-                              <span className="text-gray-600">Ngày bắt đầu:</span>
-                              <span className="font-medium">
-                                {contract.start_date ? new Date(contract.start_date).toLocaleDateString('vi-VN') : '-'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar size={14} className="text-gray-400" />
-                              <span className="text-gray-600">Ngày kết thúc:</span>
-                              <span className="font-medium">
-                                {contract.end_date ? new Date(contract.end_date).toLocaleDateString('vi-VN') : 'Không xác định'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-600">Giá thuê:</span>
-                              <span className="font-bold text-blue-600">
-                                {new Intl.NumberFormat('vi-VN').format(contract.monthly_rent || 0)} đ/tháng
-                              </span>
-                            </div>
-                            {contract.deposit > 0 && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-600">Tiền cọc:</span>
-                                <span className="font-medium">
-                                  {new Intl.NumberFormat('vi-VN').format(contract.deposit)} đ
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                {room.active_contracts.map((contract) => (
+                  <div
+                    key={contract.id}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/contracts/${contract.id}`)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-blue-500" />
+                          <span className="font-semibold text-gray-800">{contract.tenant || 'Khách thuê'}</span>
                         </div>
-                        {contract.tenant_name && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-3">
-                              <Users size={18} className="text-green-600" />
-                              <h3 className="font-semibold text-lg">Khách thuê</h3>
-                            </div>
-                            <div className="space-y-2 text-sm">
-                              <div>
-                                <span className="text-gray-600">Họ tên:</span>
-                                <p className="font-semibold text-gray-800 mt-1">{contract.tenant_name}</p>
-                              </div>
-                              {contract.tenant_phone && (
-                                <div className="flex items-center gap-2">
-                                  <Phone size={14} className="text-gray-400" />
-                                  <span className="text-gray-600">SĐT:</span>
-                                  <span className="font-medium">{contract.tenant_phone}</span>
-                                </div>
-                              )}
-                              {contract.tenant_email && (
-                                <div className="flex items-center gap-2">
-                                  <Mail size={14} className="text-gray-400" />
-                                  <span className="text-gray-600">Email:</span>
-                                  <span className="font-medium">{contract.tenant_email}</span>
-                                </div>
-                              )}
-                              {contract.tenant_id_card && (
-                                <div>
-                                  <span className="text-gray-600">CMND/CCCD:</span>
-                                  <span className="font-medium ml-2">{contract.tenant_id_card}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="mt-3 flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/contracts/${contract.id}`)}
-                              >
-                                <Eye size={14} className="mr-1" />
-                                Xem hợp đồng
-                              </Button>
-                              {contract.tenant_id && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/tenants/${contract.tenant_id}`);
-                                  }}
-                                >
-                                  <Users size={14} className="mr-1" />
-                                  Xem khách thuê
-                                </Button>
-                              )}
-                            </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Calendar className="h-4 w-4" />
+                          <span>
+                            {contract.start_date
+                              ? new Date(contract.start_date).toLocaleDateString('vi-VN')
+                              : 'Chưa xác định'}
+                            {contract.end_date
+                              ? ` - ${new Date(contract.end_date).toLocaleDateString('vi-VN')}`
+                              : ' - Hiện tại'}
+                          </span>
+                        </div>
+                        {(contract.tenant_phone || contract.tenant_email) && (
+                          <div className="flex flex-col gap-1 text-sm text-gray-500">
+                            {contract.tenant_phone && (
+                              <span className="flex items-center gap-2">
+                                <Phone className="h-4 w-4" />
+                                {contract.tenant_phone}
+                              </span>
+                            )}
+                            {contract.tenant_email && (
+                              <span className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                {contract.tenant_email}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          Đang hoạt động
+                        </span>
+                        <Button variant="outline" size="sm" onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/contracts/${contract.id}`);
+                        }}>
+                          Xem hợp đồng
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </CardContent>

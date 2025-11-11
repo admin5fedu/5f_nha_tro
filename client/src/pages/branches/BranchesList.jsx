@@ -1,42 +1,76 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
 import { Plus, Edit, Trash2, Building2, MapPin, Phone } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import FilterPanel from '../../components/FilterPanel';
 import { objectContainsTerm } from '../../utils/search';
+import { fetchBranches, deleteBranch } from '../../services/supabaseBranches';
+import { usePermissions } from '../../context/PermissionContext';
 
 const BranchesList = () => {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const pageSize = 25;
   const [filters, setFilters] = useState({});
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+  const canView = hasPermission('branches', 'view');
+  const canCreate = hasPermission('branches', 'create');
+  const canUpdate = hasPermission('branches', 'update');
+  const canDelete = hasPermission('branches', 'delete');
 
   useEffect(() => {
-    loadBranches();
-  }, []);
+    if (canView) {
+      loadBranches();
+    } else {
+      setLoading(false);
+    }
+  }, [canView]);
 
-  const loadBranches = async () => {
+  const loadBranches = async (pageToLoad = 0, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     try {
-      const response = await api.get('/branches');
-      setBranches(response.data);
+      const { data, hasMore: moreAvailable } = await fetchBranches({ limit: pageSize, offset: pageToLoad * pageSize });
+      setBranches((prev) => (append ? [...prev, ...data] : data));
+      setHasMore(moreAvailable);
+      setPage(pageToLoad);
     } catch (error) {
       console.error('Error loading branches:', error);
       alert('Lỗi khi tải danh sách chi nhánh');
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      alert('Bạn không có quyền xóa chi nhánh');
+      return;
+    }
     if (!confirm('Bạn có chắc muốn xóa chi nhánh này?')) return;
     try {
-      await api.delete(`/branches/${id}`);
-      loadBranches();
+      await deleteBranch(id);
+      loadBranches(page, false);
     } catch (error) {
-      alert('Lỗi khi xóa chi nhánh');
+      alert(error.message || 'Lỗi khi xóa chi nhánh');
     }
+  };
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    loadBranches(page + 1, true);
   };
 
   const filteredBranches = branches.filter((branch) => {
@@ -69,6 +103,16 @@ const BranchesList = () => {
     return <div className="text-center py-8">Đang tải...</div>;
   }
 
+  if (!canView) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-gray-600">
+          Bạn không có quyền xem danh sách chi nhánh.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Filter Panel */}
@@ -80,10 +124,12 @@ const BranchesList = () => {
           initialFilters={filters}
           searchPlaceholder="Tìm chi nhánh, địa chỉ, quản lý..."
         />
-        <Button onClick={() => navigate('/branches/new')} className="flex items-center gap-2">
-          <Plus size={16} />
-          Thêm
-        </Button>
+        {canCreate && (
+          <Button onClick={() => navigate('/branches/new')} className="flex items-center gap-2">
+            <Plus size={16} />
+            Thêm
+          </Button>
+        )}
       </div>
 
       {/* Desktop: Table View */}
@@ -158,24 +204,28 @@ const BranchesList = () => {
                           className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 bg-white sticky right-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/branches/${branch.id}/edit`)}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(branch.id);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                          {canUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/branches/${branch.id}/edit`)}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(branch.id);
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -186,6 +236,14 @@ const BranchesList = () => {
           </CardContent>
         </Card>
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center py-4">
+          <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Đang tải thêm...' : 'Tải thêm chi nhánh'}
+          </Button>
+        </div>
+      )}
 
       {/* Mobile: Card View */}
       <div className="lg:hidden grid grid-cols-1 gap-4">
@@ -248,22 +306,26 @@ const BranchesList = () => {
                   className="flex gap-2 pt-4 border-t"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => navigate(`/branches/${branch.id}/edit`)}
-                  >
-                    <Edit size={16} className="mr-2" />
-                    Sửa
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={() => handleDelete(branch.id)}
-                  >
-                    <Trash2 size={16} className="mr-2" />
-                    Xóa
-                  </Button>
+                  {canUpdate && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => navigate(`/branches/${branch.id}/edit`)}
+                    >
+                      <Edit size={16} className="mr-2" />
+                      Sửa
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleDelete(branch.id)}
+                    >
+                      <Trash2 size={16} className="mr-2" />
+                      Xóa
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

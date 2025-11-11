@@ -48,7 +48,7 @@ const UserForm = () => {
 
   const loadBranches = async () => {
     try {
-      const data = await fetchBranches();
+      const { data } = await fetchBranches({ limit: 100 });
       setBranches(data);
     } catch (error) {
       console.error('Error loading branches:', error);

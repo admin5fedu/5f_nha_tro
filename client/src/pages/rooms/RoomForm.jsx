@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import api from '../../services/api';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Label } from '../../components/ui/label';
+import { fetchBranches } from '../../services/supabaseBranches';
+import { fetchRoomById, createRoom, updateRoom } from '../../services/supabaseRooms';
+import { usePermissions } from '../../context/PermissionContext';
 
 const RoomForm = () => {
   const { id } = useParams();
@@ -23,18 +25,21 @@ const RoomForm = () => {
     description: '',
     amenities: ''
   });
+  const { hasPermission } = usePermissions();
+  const isEditing = useMemo(() => id && id !== 'new', [id]);
+  const canEdit = isEditing ? hasPermission('rooms', 'update') : hasPermission('rooms', 'create');
 
   useEffect(() => {
     loadBranches();
-    if (id && id !== 'new') {
+    if (isEditing) {
       loadRoom();
     }
-  }, [id]);
+  }, [id, isEditing]);
 
   const loadBranches = async () => {
     try {
-      const response = await api.get('/branches');
-      setBranches(response.data);
+      const { data } = await fetchBranches({ limit: 200 });
+      setBranches(data);
     } catch (error) {
       console.error('Error loading branches:', error);
     }
@@ -42,12 +47,22 @@ const RoomForm = () => {
 
   const loadRoom = async () => {
     try {
-      const response = await api.get(`/rooms/${id}`);
+      const data = await fetchRoomById(id);
+      if (!data) {
+        alert('Không tìm thấy phòng');
+        navigate('/rooms');
+        return;
+      }
       setFormData({
-        ...response.data,
-        floor: response.data.floor || '',
-        area: response.data.area || '',
-        deposit: response.data.deposit || ''
+        branch_id: data.branch_id || '',
+        room_number: data.room_number || '',
+        floor: data.floor !== null && data.floor !== undefined ? String(data.floor) : '',
+        area: data.area !== null && data.area !== undefined ? String(data.area) : '',
+        price: data.price !== null && data.price !== undefined ? String(data.price) : '',
+        deposit: data.deposit !== null && data.deposit !== undefined ? String(data.deposit) : '',
+        status: data.status || 'available',
+        description: data.description || '',
+        amenities: data.amenities || ''
       });
     } catch (error) {
       console.error('Error loading room:', error);
@@ -58,6 +73,10 @@ const RoomForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canEdit) {
+      alert('Bạn không có quyền thực hiện thao tác này');
+      return;
+    }
     setLoading(true);
     try {
       const data = {
@@ -68,15 +87,15 @@ const RoomForm = () => {
         price: parseFloat(formData.price),
         deposit: formData.deposit ? parseFloat(formData.deposit) : 0
       };
-      if (id && id !== 'new') {
-        await api.put(`/rooms/${id}`, data);
+      if (isEditing) {
+        await updateRoom(id, data);
         navigate(`/rooms/${id}`);
       } else {
-        const response = await api.post('/rooms', data);
-        navigate(`/rooms/${response.data.id}`);
+        const created = await createRoom(data);
+        navigate(`/rooms/${created.id}`);
       }
     } catch (error) {
-      alert('Lỗi khi lưu phòng');
+      alert(error.message || 'Lỗi khi lưu phòng');
     } finally {
       setLoading(false);
     }
@@ -84,16 +103,25 @@ const RoomForm = () => {
 
   return (
     <div className="space-y-6">
+      {!canEdit && (
+        <Card>
+          <CardContent className="py-6">
+            <p className="text-sm text-gray-600">
+              Bạn chỉ có quyền xem thông tin phòng. Liên hệ quản trị viên để được cấp quyền tạo hoặc cập nhật phòng.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/rooms')}>
           <ArrowLeft size={20} />
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
-            {id && id !== 'new' ? 'Sửa phòng' : 'Thêm phòng'}
+            {isEditing ? 'Sửa phòng' : 'Thêm phòng'}
           </h1>
           <p className="text-gray-600 mt-1">
-            {id && id !== 'new' ? 'Cập nhật thông tin phòng' : 'Thêm phòng mới vào hệ thống'}
+            {isEditing ? 'Cập nhật thông tin phòng' : 'Thêm phòng mới vào hệ thống'}
           </p>
         </div>
       </div>
@@ -114,6 +142,7 @@ const RoomForm = () => {
                     value={formData.branch_id}
                     onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!canEdit || loading}
                   >
                     <option value="">Chọn chi nhánh</option>
                     {branches.map((branch) => (
@@ -131,6 +160,7 @@ const RoomForm = () => {
                     value={formData.room_number}
                     onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!canEdit || loading}
                   />
                 </div>
                 <div>
@@ -140,6 +170,7 @@ const RoomForm = () => {
                     value={formData.floor}
                     onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!canEdit || loading}
                   />
                 </div>
                 <div>
@@ -150,6 +181,7 @@ const RoomForm = () => {
                     value={formData.area}
                     onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!canEdit || loading}
                   />
                 </div>
                 <div>
@@ -161,6 +193,7 @@ const RoomForm = () => {
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!canEdit || loading}
                   />
                 </div>
                 <div>
@@ -171,6 +204,7 @@ const RoomForm = () => {
                     value={formData.deposit}
                     onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!canEdit || loading}
                   />
                 </div>
                 <div>
@@ -179,6 +213,7 @@ const RoomForm = () => {
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!canEdit || loading}
                   >
                     <option value="available">Trống</option>
                     <option value="occupied">Đã thuê</option>
@@ -193,6 +228,7 @@ const RoomForm = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 />
               </div>
               <div>
@@ -203,6 +239,7 @@ const RoomForm = () => {
                   onChange={(e) => setFormData({ ...formData, amenities: e.target.value })}
                   placeholder="VD: Điều hòa, Wifi, Tủ lạnh..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!canEdit || loading}
                 />
               </div>
             </div>
@@ -219,7 +256,7 @@ const RoomForm = () => {
           >
             Hủy
           </Button>
-          <Button type="submit" form="room-form" disabled={loading} className="flex-1">
+          <Button type="submit" form="room-form" disabled={loading || !canEdit} className="flex-1">
             {loading ? 'Đang lưu...' : 'Lưu'}
           </Button>
         </div>
