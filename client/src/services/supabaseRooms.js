@@ -67,38 +67,61 @@ export const fetchRoomById = async (roomId) => {
   const supabase = ensureClient();
   const { data, error } = await supabase
     .from('rooms')
-    .select(
-      `
-        ${listSelect},
-        images ( id, name, image_url ),
-        assets ( id, name, type, status ),
-        tenants:contracts!contracts_room_id_fkey (
-          id,
-          status,
-          start_date,
-          end_date,
-          tenants:tenant_id ( id, full_name, phone, email )
-        )
-      `
-    )
+    .select(listSelect)
     .eq('id', roomId)
     .maybeSingle();
 
   if (error) throw error;
   const room = mapRoom(data);
-  if (room && data) {
-    room.images = data.images || [];
-    room.assets = data.assets || [];
-    room.active_contracts =
-      data.tenants?.filter?.((c) => c?.status === 'active').map((c) => ({
-        id: c.id,
-        tenant: c.tenants?.full_name || '',
-        tenant_phone: c.tenants?.phone || '',
-        tenant_email: c.tenants?.email || '',
-        start_date: c.start_date,
-        end_date: c.end_date
-      })) || [];
+  if (!room) return null;
+
+  // Fetch related data separately to avoid REST errors if relationships are not configured
+  try {
+    const { data: imageData, error: imageError } = await supabase
+      .from('images')
+      .select('id, name, image_url')
+      .eq('room_id', roomId);
+    if (imageError) throw imageError;
+    room.images = imageData || [];
+  } catch (relatedError) {
+    console.warn('[rooms] Unable to load images for room', roomId, relatedError.message || relatedError);
+    room.images = [];
   }
+
+  try {
+    const { data: assetData, error: assetError } = await supabase
+      .from('assets')
+      .select('id, name, type, status')
+      .eq('room_id', roomId);
+    if (assetError) throw assetError;
+    room.assets = assetData || [];
+  } catch (relatedError) {
+    console.warn('[rooms] Unable to load assets for room', roomId, relatedError.message || relatedError);
+    room.assets = [];
+  }
+
+  try {
+    const { data: contractData, error: contractError } = await supabase
+      .from('contracts')
+      .select('id, status, start_date, end_date, tenants:tenant_id ( id, full_name, phone, email )')
+      .eq('room_id', roomId);
+    if (contractError) throw contractError;
+    room.active_contracts =
+      (contractData || [])
+        .filter((contract) => contract.status === 'active')
+        .map((contract) => ({
+          id: contract.id,
+          tenant: contract.tenants?.full_name || '',
+          tenant_phone: contract.tenants?.phone || '',
+          tenant_email: contract.tenants?.email || '',
+          start_date: contract.start_date,
+          end_date: contract.end_date
+        })) || [];
+  } catch (relatedError) {
+    console.warn('[rooms] Unable to load contracts for room', roomId, relatedError.message || relatedError);
+    room.active_contracts = [];
+  }
+
   return room;
 };
 

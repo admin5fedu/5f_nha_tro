@@ -1,5 +1,4 @@
 import supabaseClient, { isSupabaseConfigured } from './supabaseClient';
-import { syncSupabaseAuthUser } from './supabaseAuthSync';
 
 const ensureClient = () => {
   if (!isSupabaseConfigured || !supabaseClient) {
@@ -134,53 +133,17 @@ export const createUser = async ({ branch_ids = [], ...payload }) => {
     await syncUserBranches(data.id, branch_ids);
   }
 
-  try {
-    await syncSupabaseAuthUser({
-      email: data.email,
-      fullName: data.full_name,
-      password: payload.password
-    });
-  } catch (syncError) {
-    console.error('Failed to sync Supabase Auth user after creation:', syncError);
-    throw new Error('Không thể đồng bộ tài khoản đăng nhập. Vui lòng kiểm tra cấu hình SUPABASE_AUTH_SYNC.');
-  }
-
   return fetchUserById(data.id);
 };
 
 export const updateUser = async (id, { branch_ids = [], ...payload }) => {
   const supabase = ensureClient();
-  let existing;
-  try {
-    existing = await fetchUserById(id);
-  } catch (err) {
-    console.warn('Unable to load existing user before update:', err);
-  }
   const updatePayload = { ...payload, updated_at: new Date().toISOString() };
   const { error } = await supabase.from('users').update(updatePayload).eq('id', id);
   if (error) throw error;
 
   await syncUserBranches(id, branch_ids);
-  const updated = await fetchUserById(id);
-
-  const targetEmail = updated?.email || existing?.email;
-  const emailChanged = existing && targetEmail && existing.email !== targetEmail;
-  const shouldSyncAuth = Boolean(targetEmail && (emailChanged || payload.password));
-
-  if (shouldSyncAuth) {
-    try {
-      await syncSupabaseAuthUser({
-        email: targetEmail,
-        fullName: updated?.full_name || payload.full_name || existing?.full_name,
-        password: payload.password
-      });
-    } catch (syncError) {
-      console.error('Failed to sync Supabase Auth user after update:', syncError);
-      throw new Error('Không thể đồng bộ tài khoản đăng nhập sau khi cập nhật. Vui lòng kiểm tra cấu hình SUPABASE_AUTH_SYNC.');
-    }
-  }
-
-  return updated;
+  return fetchUserById(id);
 };
 
 export const deleteUser = async (id) => {
